@@ -1,0 +1,32 @@
+# Environment variables — NEVER commit this
+.env
+.env.*
+*.env
+
+# Python virtual environment
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Uploads
+uploads/
+instance/

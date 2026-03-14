@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEURAX — Auth</title>
+  <link rel="stylesheet" href="/static/css/apple.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(160deg, #F0F6FF 0%, #E8F4FF 100%);
+      padding: 24px;
+    }
+
+    .auth-wrapper {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .auth-logo a {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--blue);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .auth-logo a span { color: var(--label); }
+    .auth-logo p { font-size: 14px; color: var(--gray); margin-top: 4px; }
+
+    .auth-card {
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-tabs {
+      display: flex;
+      background: var(--gray6);
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 9px;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--gray);
+      font-family: inherit;
+      transition: all 0.2s var(--ease);
+      text-align: center;
+    }
+    .auth-tab.active {
+      background: white;
+      color: var(--label);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--gray);
+    }
+    .auth-footer a { color: var(--blue); font-weight: 500; text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray2);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 20px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--gray5);
+    }
+
+    .hospital-info-box {
+      background: var(--gray6);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    .hospital-info-box strong { color: var(--label); }
+    .hospital-info-box span { color: var(--gray); }
+
+    .otp-input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .otp-input-row .input { text-align: center; font-size: 22px; font-weight: 700; letter-spacing: 8px; flex: 1; }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--gray);
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    .back-link:hover { color: var(--blue); }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--gray);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-wrapper">
+  <div class="auth-logo">
+    <a href="/">NEUR<span>AX</span></a>
+    <p id="authSubtitle">Healthcare, unified.</p>
+  </div>
+
+  <div class="auth-card" id="authCard">
+
+    <!-- ── Patient Login ── -->
+    <div id="formPatientLogin" class="auth-form active">
+      <div class="auth-tabs" id="patientLoginTabs">
+        <button class="auth-tab active" onclick="switchPortal('patient')">Patient</button>
+        <button class="auth-tab" onclick="switchPortal('branch')">Hospital</button>
+      </div>
+      <h3 style="margin-bottom:6px">Welcome back</h3>
+      <p class="text-sm text-secondary mb-4">Sign in to your patient account</p>
+      <form onsubmit="handlePatientLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-group">
+            <span class="input-icon"><i class="fa-solid fa-envelope"></i></span>
+            <input type="email" id="plEmail" class="input" placeholder="you@email.com" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-group" style="position:relative">
+            <span class="input-icon"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" id="plPassword" class="input" placeholder="Enter password" required />
+            <button type="button" class="password-toggle" onclick="togglePassword('plPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div style="text-align:right;margin-bottom:20px">
+          <a href="#" class="text-sm text-blue font-medium" onclick="showForm('formForgotPassword', 'patient')">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="plBtn">
+          <span>Sign In</span>
+        </button>
+      </form>
+      <div class="auth-footer">
+        Don't have an account? <a href="#" onclick="showForm('formPatientRegister')">Create one</a>
+      </div>
+    </div>
+
+    <!-- ── Patient Register ── -->
+    <div id="formPatientRegister" class="auth-form">
+      <span class="back-link" onclick="showForm('formPatientLogin')">
+        <i class="fa-solid fa-chevron-left"></i> Back
+      </span>
+      <h3 style="margin-bottom:6px">Create account</h3>
+      <p class="text-sm text-secondary mb-4">Join NEURAX as a patient</p>
+      <form onsubmit="handlePatientRegister(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input type="text" id="prFirstName" class="input" placeholder="First" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input type="text" id="prLastName" class="input" placeholder="Last" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="prEmail" class="input" placeholder="you@email.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-group" style="position:relative">
+            <input type="password" id="prPassword" class="input" placeholder="Min. 8 characters" required minlength="8" />
+            <button type="button" class="password-toggle" onclick="togglePassword('prPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" id="prPhone" class="input" placeholder="+91 XXXXX XXXXX" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" id="prDob" class="input" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select id="prGender" class="input" required>
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Blood Group</label>
+            <select id="prBloodGroup" class="input" required>
+              <option value="">Select</option>
+              <option>A+</option><option>A-</option>
+              <option>B+</option><option>B-</option>
+              <option>O+</option><option>O-</option>
+              <option>AB+</option><option>AB-</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-title">Emergency Contact (Optional)</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contact Name</label>
+            <input type="text" id="prEcName" class="input" placeholder="Name" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Phone</label>
+            <input type="tel" id="prEcPhone" class="input" placeholder="Phone" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="prBtn">
+          <span>Create Account</span>
+        </button>
+      </form>
+      <div class="auth-footer">
+        Already have an account? <a href="#" onclick="showForm('formPatientLogin')">Sign in</a>
+      </div>
+    </div>
+
+    <!-- ── Branch Login ── -->
+    <div id="formBranchLogin" class="auth-form">
+      <div class="auth-tabs">
+        <button class="auth-tab" onclick="switchPortal('patient')">Patient</button>
+        <button class="auth-tab active" onclick="switchPortal('branch')">Hospital</button>
+      </div>
+      <h3 style="margin-bottom:6px">Branch Login</h3>
+      <p class="text-sm text-secondary mb-4">Sign in to your hospital branch</p>
+      <form onsubmit="handleBranchLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Branch Email</label>
+          <div class="input-group">
+            <span class="input-icon"><i class="fa-solid fa-envelope"></i></span>
+            <input type="email" id="blEmail" class="input" placeholder="branch@hospital.com" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-group" style="position:relative">
+            <span class="input-icon"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" id="blPassword" class="input" placeholder="Enter password" required />
+            <button type="button" class="password-toggle" onclick="togglePassword('blPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div style="text-align:right;margin-bottom:20px">
+          <a href="#" class="text-sm text-blue font-medium" onclick="showForm('formForgotPassword', 'branch')">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="blBtn">
+          <span>Sign In</span>
+        </button>
+      </form>
+      <div class="auth-footer">
+        New hospital? <a href="#" onclick="showForm('formBranchRegister')">Register here</a>
+      </div>
+    </div>
+
+    <!-- ── Branch Register (First Branch — creates hospital) ── -->
+    <div id="formBranchRegister" class="auth-form">
+      <span class="back-link" onclick="showForm('formBranchLogin')">
+        <i class="fa-solid fa-chevron-left"></i> Back
+      </span>
+      <h3 style="margin-bottom:6px">Register Hospital</h3>
+      <p class="text-sm text-secondary mb-4">Create your hospital's first branch on NEURAX</p>
+      <form onsubmit="handleBranchRegister(event)">
+        <div class="section-title">Hospital Details</div>
+        <div class="form-group">
+          <label class="form-label">Hospital Name</label>
+          <input type="text" id="brHospitalName" class="input" placeholder="e.g. Apollo Hospitals" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Hospital Type</label>
+            <select id="brHospitalType" class="input" required>
+              <option value="">Select</option>
+              <option>General Hospital</option>
+              <option>Multi-Specialty</option>
+              <option>Super-Specialty</option>
+              <option>Clinic</option>
+              <option>Diagnostic Center</option>
+              <option>Nursing Home</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Registration No.</label>
+            <input type="text" id="brRegNo" class="input" placeholder="MCI-XXXXX" required />
+          </div>
+        </div>
+        <div class="section-title">Branch Details</div>
+        <div class="form-group">
+          <label class="form-label">Branch Name</label>
+          <input type="text" id="brBranchName" class="input" placeholder="e.g. Apollo Hospitals — Banjara Hills" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Branch Address</label>
+          <input type="text" id="brAddress" class="input" placeholder="Street address" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" id="brCity" class="input" placeholder="City" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">State</label>
+            <input type="text" id="brState" class="input" placeholder="State" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" id="brPhone" class="input" placeholder="+91 XXXXXXXXXX" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Branch Email</label>
+            <input type="email" id="brEmail" class="input" placeholder="branch@hospital.com" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-group" style="position:relative">
+            <input type="password" id="brPassword" class="input" placeholder="Create a strong password" required minlength="8" />
+            <button type="button" class="password-toggle" onclick="togglePassword('brPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="brBtn">
+          <span>Submit Registration</span>
+        </button>
+      </form>
+      <p class="text-xs text-secondary" style="margin-top:12px;text-align:center">
+        Your registration will be reviewed by our admin team. You'll receive an email once approved.
+      </p>
+    </div>
+
+    <!-- ── Branch Register via Invite ── -->
+    <div id="formBranchInvite" class="auth-form">
+      <span class="back-link" onclick="showForm('formBranchLogin')">
+        <i class="fa-solid fa-chevron-left"></i> Back
+      </span>
+      <h3 style="margin-bottom:6px">Join via Invite</h3>
+      <p class="text-sm text-secondary mb-4">Register your branch using the invite link</p>
+      <div id="inviteHospitalInfo" class="hospital-info-box hidden">
+        <p>Joining <strong id="inviteHospitalName">—</strong></p>
+        <p>Invited by <span id="inviteBranchName">—</span></p>
+      </div>
+      <form onsubmit="handleBranchInviteRegister(event)">
+        <input type="hidden" id="biToken" />
+        <div class="form-group">
+          <label class="form-label">Branch Name</label>
+          <input type="text" id="biBranchName" class="input" placeholder="Branch name" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <input type="text" id="biAddress" class="input" placeholder="Street address" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" id="biCity" class="input" placeholder="City" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">State</label>
+            <input type="text" id="biState" class="input" placeholder="State" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" id="biPhone" class="input" placeholder="Phone" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="biEmail" class="input" placeholder="Branch email" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-group" style="position:relative">
+            <input type="password" id="biPassword" class="input" placeholder="Create password" required minlength="8" />
+            <button type="button" class="password-toggle" onclick="togglePassword('biPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="biBtn">
+          <span>Complete Registration</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Forgot Password ── -->
+    <div id="formForgotPassword" class="auth-form">
+      <span class="back-link" id="forgotBackLink" onclick="goBackFromForgot()">
+        <i class="fa-solid fa-chevron-left"></i> Back
+      </span>
+      <h3 style="margin-bottom:6px">Reset Password</h3>
+      <p class="text-sm text-secondary mb-4">Enter your email to receive a reset OTP</p>
+      <input type="hidden" id="fpUserType" value="patient" />
+      <form onsubmit="handleForgotPassword(event)">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-group">
+            <span class="input-icon"><i class="fa-solid fa-envelope"></i></span>
+            <input type="email" id="fpEmail" class="input" placeholder="Registered email" required />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="fpBtn">
+          <span>Send OTP</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Enter OTP ── -->
+    <div id="formEnterOtp" class="auth-form">
+      <h3 style="margin-bottom:6px">Enter OTP</h3>
+      <p class="text-sm text-secondary mb-4">We sent a 6-digit code to <strong id="otpEmailDisplay"></strong></p>
+      <form onsubmit="handleVerifyOtp(event)">
+        <div class="form-group">
+          <label class="form-label">6-Digit OTP</label>
+          <div class="otp-input-row">
+            <input type="text" id="otpCode" class="input" placeholder="000000" maxlength="6" inputmode="numeric" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <div class="input-group" style="position:relative">
+            <input type="password" id="otpNewPassword" class="input" placeholder="New password" required minlength="8" />
+            <button type="button" class="password-toggle" onclick="togglePassword('otpNewPassword', this)">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" id="otpConfirmPassword" class="input" placeholder="Confirm password" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="otpBtn">
+          <span>Reset Password</span>
+        </button>
+      </form>
+    </div>
+
+  </div><!-- /auth-card -->
+</div><!-- /auth-wrapper -->
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode') || 'patient-login';
+  const token = params.get('token');
+  let forgotUserType = 'patient';
+
+  const formMap = {
+    'patient-login':    'formPatientLogin',
+    'patient-register': 'formPatientRegister',
+    'branch-login':     'formBranchLogin',
+    'branch-register':  'formBranchRegister',
+    'branch-invite':    'formBranchInvite',
+  };
+
+  function showForm(id, extra) {
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (extra) forgotUserType = extra;
+  }
+
+  function switchPortal(portal) {
+    showForm(portal === 'patient' ? 'formPatientLogin' : 'formBranchLogin');
+  }
+
+  function goBackFromForgot() {
+    showForm(forgotUserType === 'patient' ? 'formPatientLogin' : 'formBranchLogin');
+  }
+
+  // Init
+  const initialForm = formMap[mode] || 'formPatientLogin';
+  showForm(initialForm);
+
+  // If invite token present, load invite info
+  if (token && mode === 'branch-invite') {
+    document.getElementById('biToken').value = token;
+    fetch(`/api/auth/invite/validate?token=${token}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.hospital_name) {
+          document.getElementById('inviteHospitalName').textContent = data.hospital_name;
+          document.getElementById('inviteBranchName').textContent = data.inviting_branch;
+          document.getElementById('biEmail').value = data.email;
+          document.getElementById('inviteHospitalInfo').classList.remove('hidden');
+        } else {
+          showToast('Invalid or expired invite link.', 'error');
+        }
+      });
+  }
+
+  // ── Toasts ──
+  function showToast(msg, type = 'info') {
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fa-solid ${icons[type]} toast-icon"></i><span>${msg}</span>`;
+    c.appendChild(t);
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3500);
+  }
+
+  function setLoading(btnId, loading, text = 'Submit') {
+    const btn = document.getElementById(btnId);
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner spinner-sm"></span>`;
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = `<span>${text}</span>`;
+    }
+  }
+
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-solid fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-solid fa-eye';
+    }
+  }
+
+  function storeAuth(token, data, role) {
+    localStorage.setItem('neurax_token', token);
+    localStorage.setItem('neurax_role', role);
+    localStorage.setItem('neurax_user', JSON.stringify(data));
+  }
+
+  // ── Patient Login ──
+  async function handlePatientLogin(e) {
+    e.preventDefault();
+    setLoading('plBtn', true);
+    try {
+      const res = await fetch('/api/auth/patient/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: document.getElementById('plEmail').value, password: document.getElementById('plPassword').value })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      storeAuth(data.token, data, 'patient');
+      showToast(`Welcome back, ${data.first_name}!`, 'success');
+      setTimeout(() => window.location.href = '/patient', 800);
+    } catch(err) {
+      showToast(err.message || 'Login failed', 'error');
+      setLoading('plBtn', false, 'Sign In');
+    }
+  }
+
+  // ── Patient Register ──
+  async function handlePatientRegister(e) {
+    e.preventDefault();
+    setLoading('prBtn', true);
+    const body = {
+      first_name: document.getElementById('prFirstName').value,
+      last_name: document.getElementById('prLastName').value,
+      email: document.getElementById('prEmail').value,
+      password: document.getElementById('prPassword').value,
+      phone: document.getElementById('prPhone').value,
+      dob: document.getElementById('prDob').value,
+      gender: document.getElementById('prGender').value,
+      blood_group: document.getElementById('prBloodGroup').value,
+      emergency_contact_name: document.getElementById('prEcName').value,
+      emergency_contact_phone: document.getElementById('prEcPhone').value,
+    };
+    try {
+      const res = await fetch('/api/auth/patient/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      storeAuth(data.token, data, 'patient');
+      showToast(`Account created! Your ID: ${data.patient_uid}`, 'success');
+      setTimeout(() => window.location.href = '/patient', 1000);
+    } catch(err) {
+      showToast(err.message || 'Registration failed', 'error');
+      setLoading('prBtn', false, 'Create Account');
+    }
+  }
+
+  // ── Branch Login ──
+  async function handleBranchLogin(e) {
+    e.preventDefault();
+    setLoading('blBtn', true);
+    try {
+      const res = await fetch('/api/auth/branch/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: document.getElementById('blEmail').value, password: document.getElementById('blPassword').value })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      storeAuth(data.token, data, 'branch');
+      showToast('Login successful', 'success');
+      setTimeout(() => window.location.href = '/branch', 800);
+    } catch(err) {
+      showToast(err.message || 'Login failed', 'error');
+      setLoading('blBtn', false, 'Sign In');
+    }
+  }
+
+  // ── Branch Register ──
+  async function handleBranchRegister(e) {
+    e.preventDefault();
+    setLoading('brBtn', true);
+    const body = {
+      hospital_name: document.getElementById('brHospitalName').value,
+      hospital_type: document.getElementById('brHospitalType').value,
+      registration_number: document.getElementById('brRegNo').value,
+      branch_name: document.getElementById('brBranchName').value,
+      address: document.getElementById('brAddress').value,
+      city: document.getElementById('brCity').value,
+      state: document.getElementById('brState').value,
+      phone: document.getElementById('brPhone').value,
+      email: document.getElementById('brEmail').value,
+      password: document.getElementById('brPassword').value,
+    };
+    try {
+      const res = await fetch('/api/auth/branch/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showToast('Registration submitted! Awaiting admin approval.', 'success');
+      // Show hospital code
+      document.getElementById('authCard').innerHTML = `
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:52px;margin-bottom:16px">🎉</div>
+          <h3 style="margin-bottom:8px">Registration Submitted!</h3>
+          <p class="text-sm text-secondary" style="margin-bottom:24px">
+            Your registration is under review. You'll receive an email once approved.
+          </p>
+          <div style="background:var(--gray6);border-radius:14px;padding:20px;margin-bottom:24px">
+            <p class="text-xs text-secondary" style="margin-bottom:4px">YOUR HOSPITAL CODE</p>
+            <p style="font-size:26px;font-weight:800;letter-spacing:3px;color:var(--blue)">${data.hospital_code}</p>
+            <p class="text-xs text-secondary" style="margin-top:8px">Share this code to invite other branches of your hospital</p>
+          </div>
+          <a href="/auth?mode=branch-login" class="btn btn-primary btn-full">Go to Login</a>
+        </div>
+      `;
+    } catch(err) {
+      showToast(err.message || 'Registration failed', 'error');
+      setLoading('brBtn', false, 'Submit Registration');
+    }
+  }
+
+  // ── Branch Invite Register ──
+  async function handleBranchInviteRegister(e) {
+    e.preventDefault();
+    setLoading('biBtn', true);
+    const body = {
+      invite_token: document.getElementById('biToken').value,
+      branch_name: document.getElementById('biBranchName').value,
+      address: document.getElementById('biAddress').value,
+      city: document.getElementById('biCity').value,
+      state: document.getElementById('biState').value,
+      phone: document.getElementById('biPhone').value,
+      email: document.getElementById('biEmail').value,
+      password: document.getElementById('biPassword').value,
+    };
+    try {
+      const res = await fetch('/api/auth/branch/register-via-invite', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      storeAuth(data.token, data, 'branch');
+      showToast('Branch registered successfully!', 'success');
+      setTimeout(() => window.location.href = '/branch', 800);
+    } catch(err) {
+      showToast(err.message || 'Registration failed', 'error');
+      setLoading('biBtn', false, 'Complete Registration');
+    }
+  }
+
+  // ── Forgot Password ──
+  let forgotEmail = '';
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    setLoading('fpBtn', true);
+    forgotEmail = document.getElementById('fpEmail').value;
+    try {
+      await fetch('/api/auth/forgot-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, user_type: forgotUserType })
+      });
+      document.getElementById('otpEmailDisplay').textContent = forgotEmail;
+      showForm('formEnterOtp');
+      showToast('OTP sent! Check your email.', 'success');
+    } catch(err) {
+      showToast('Something went wrong', 'error');
+    } finally {
+      setLoading('fpBtn', false, 'Send OTP');
+    }
+  }
+
+  // ── Verify OTP ──
+  async function handleVerifyOtp(e) {
+    e.preventDefault();
+    const newPass = document.getElementById('otpNewPassword').value;
+    const confirmPass = document.getElementById('otpConfirmPassword').value;
+    if (newPass !== confirmPass) { showToast('Passwords do not match', 'error'); return; }
+    setLoading('otpBtn', true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, otp: document.getElementById('otpCode').value, new_password: newPass, user_type: forgotUserType })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showToast('Password reset successfully!', 'success');
+      setTimeout(() => showForm(forgotUserType === 'patient' ? 'formPatientLogin' : 'formBranchLogin'), 1200);
+    } catch(err) {
+      showToast(err.message || 'Invalid OTP', 'error');
+      setLoading('otpBtn', false, 'Reset Password');
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEURAX — Super Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/static/css/apple.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:      #007AFF;
+      --green:     #34C759;
+      --red:       #FF3B30;
+      --orange:    #FF9500;
+      --yellow:    #FFCC00;
+      --purple:    #AF52DE;
+      --bg:        #F2F2F7;
+      --card:      #FFFFFF;
+      --border:    #E5E5EA;
+      --label:     #8E8E93;
+      --text:      #1C1C1E;
+      --text2:     #3A3A3C;
+      --sidebar-w: 252px;
+      --header-h:  64px;
+      --radius:    14px;
+      --shadow:    0 2px 12px rgba(0,0,0,.07);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+      --trans:     .18s ease;
+    }
+
+    html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+    /* ── LOGIN ─────────────────────────────────────────────── */
+    #login-screen {
+      display: none;
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    #login-screen.active { display: flex; }
+
+    .login-card {
+      background: var(--card);
+      border-radius: 22px;
+      box-shadow: var(--shadow-lg);
+      padding: 44px 40px 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .login-logo .logo-mark {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--blue) 0%, #5856D6 100%);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 20px;
+    }
+    .login-logo h1 { font-size: 22px; font-weight: 700; letter-spacing: -.4px; }
+    .login-logo span { font-size: 12px; color: var(--label); font-weight: 500; display: block; margin-top: -2px; }
+    .login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .login-card p  { font-size: 14px; color: var(--label); margin-bottom: 28px; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 7px; }
+    .form-group input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit; font-size: 15px; color: var(--text);
+      background: var(--bg);
+      transition: border-color var(--trans), box-shadow var(--trans);
+      outline: none;
+    }
+    .form-group input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+    .form-group input.error-input { border-color: var(--red); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 7px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      border: none; cursor: pointer;
+      transition: opacity var(--trans), transform var(--trans), box-shadow var(--trans);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .5; pointer-events: none; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { box-shadow: 0 4px 16px rgba(0,122,255,.35); }
+    .btn-success { background: var(--green); color: #fff; }
+    .btn-success:hover { box-shadow: 0 4px 12px rgba(52,199,89,.35); }
+    .btn-danger  { background: var(--red);  color: #fff; }
+    .btn-danger:hover  { box-shadow: 0 4px 12px rgba(255,59,48,.35); }
+    .btn-ghost   { background: transparent; color: var(--blue); border: 1.5px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg); }
+    .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: 8px; }
+    .btn-full { width: 100%; }
+
+    #login-error { color: var(--red); font-size: 13px; font-weight: 500; margin-top: 4px; min-height: 18px; }
+
+    /* ── APP SHELL ──────────────────────────────────────────── */
+    #app { display: none; height: 100%; }
+    #app.active { display: flex; }
+
+    /* ── SIDEBAR ────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed; left: 0; top: 0; bottom: 0;
+      z-index: 100;
+      padding: 0 0 20px;
+    }
+    .sidebar-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-logo-mark {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--blue) 0%, #5856D6 100%);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px; flex-shrink: 0;
+    }
+    .sidebar-brand { line-height: 1.2; }
+    .sidebar-brand .brand-name { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
+    .sidebar-brand .brand-role { font-size: 11px; color: var(--label); font-weight: 500; }
+
+    .sidebar-nav { flex: 1; padding: 14px 12px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 11px; font-weight: 600; color: var(--label);
+      text-transform: uppercase; letter-spacing: .6px;
+      padding: 10px 8px 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px; font-weight: 500;
+      color: var(--text2);
+      transition: background var(--trans), color var(--trans);
+      margin-bottom: 2px;
+      user-select: none;
+    }
+    .nav-item:hover { background: var(--bg); }
+    .nav-item.active { background: rgba(0,122,255,.1); color: var(--blue); }
+    .nav-item .nav-icon { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+    .nav-item .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 1px 7px; border-radius: 20px;
+    }
+
+    .sidebar-footer {
+      padding: 14px 12px 0;
+      border-top: 1px solid var(--border);
+    }
+    .user-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), #5856D6);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-info .u-name  { font-size: 13px; font-weight: 600; }
+    .user-info .u-email { font-size: 11px; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .logout-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--label); font-size: 14px;
+      padding: 4px; border-radius: 6px;
+      transition: color var(--trans);
+    }
+    .logout-btn:hover { color: var(--red); }
+
+    /* ── MAIN ───────────────────────────────────────────────── */
+    .main-content {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page-header {
+      height: var(--header-h);
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 28px;
+      position: sticky; top: 0; z-index: 50;
+      gap: 12px;
+    }
+    .page-header h2 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; flex: 1; }
+    .page-header .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .page-body { padding: 28px; flex: 1; }
+
+    /* ── PAGES ──────────────────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── STAT CARDS ─────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 10px;
+      transition: box-shadow var(--trans), transform var(--trans);
+    }
+    .stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+    .stat-card .stat-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #fff;
+    }
+    .stat-card .stat-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+    .stat-card .stat-label { font-size: 13px; color: var(--label); font-weight: 500; }
+    .stat-card .stat-delta { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .stat-card .stat-delta.up   { color: var(--green); }
+    .stat-card .stat-delta.down { color: var(--red); }
+
+    /* ── SECTION ────────────────────────────────────────────── */
+    .section { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+    .section-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-header h3 { font-size: 16px; font-weight: 700; flex: 1; }
+    .section-header .section-meta { font-size: 13px; color: var(--label); }
+
+    /* ── TABLE ──────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 12px; font-weight: 600;
+      color: var(--label);
+      text-transform: uppercase; letter-spacing: .5px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr { transition: background var(--trans); border-bottom: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(0,0,0,.018); }
+    tbody tr.expandable { cursor: pointer; }
+    tbody td { padding: 13px 16px; font-size: 14px; vertical-align: middle; }
+    .td-muted { color: var(--label); font-size: 13px; }
+
+    /* ── BADGES ─────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; white-space: nowrap;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .badge-blue    { background: rgba(0,122,255,.12);   color: var(--blue); }
+    .badge-green   { background: rgba(52,199,89,.12);   color: #1e8f44; }
+    .badge-red     { background: rgba(255,59,48,.12);   color: #c62828; }
+    .badge-orange  { background: rgba(255,149,0,.12);   color: #b85c00; }
+    .badge-purple  { background: rgba(175,82,222,.12);  color: #7b2fbe; }
+    .badge-gray    { background: rgba(142,142,147,.12); color: var(--label); }
+
+    /* ── FILTERS ────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex; gap: 8px; align-items: center;
+      padding: 14px 22px; border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 20px;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--label);
+      cursor: pointer;
+      transition: all var(--trans);
+    }
+    .filter-btn:hover   { border-color: var(--blue); color: var(--blue); background: rgba(0,122,255,.05); }
+    .filter-btn.active  { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .filter-spacer { flex: 1; }
+    .search-input {
+      padding: 8px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      font-family: inherit; font-size: 13px;
+      background: var(--bg); color: var(--text);
+      outline: none; width: 200px;
+      transition: border-color var(--trans), box-shadow var(--trans);
+    }
+    .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.1); }
+
+    /* ── PENDING HOSPITAL CARD ──────────────────────────────── */
+    .pending-list { padding: 8px 16px 16px; }
+    .pending-card {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 10px;
+      background: var(--card);
+      transition: box-shadow var(--trans);
+    }
+    .pending-card:hover { box-shadow: var(--shadow); }
+    .pending-avatar {
+      width: 42px; height: 42px; border-radius: 10px;
+      background: rgba(0,122,255,.1);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--blue); font-size: 18px; flex-shrink: 0;
+    }
+    .pending-info { flex: 1; min-width: 0; }
+    .pending-name  { font-size: 14px; font-weight: 600; }
+    .pending-meta  { font-size: 12px; color: var(--label); margin-top: 2px; }
+    .pending-actions { display: flex; gap: 8px; }
+
+    /* ── EXPANDED ROW ───────────────────────────────────────── */
+    tr.branch-row td {
+      padding: 0;
+      background: rgba(0,122,255,.03);
+    }
+    .branch-inner {
+      padding: 12px 22px 14px 46px;
+      border-top: 1px dashed var(--border);
+    }
+    .branch-inner h5 { font-size: 12px; font-weight: 700; color: var(--label); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .branch-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .branch-pill {
+      padding: 5px 12px; border-radius: 20px;
+      background: var(--bg); border: 1px solid var(--border);
+      font-size: 12px; font-weight: 500; color: var(--text2);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .branch-pill i { color: var(--blue); font-size: 11px; }
+
+    /* ── REFRESH BAR ────────────────────────────────────────── */
+    .refresh-bar {
+      padding: 10px 22px;
+      background: rgba(0,122,255,.04);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--label);
+    }
+    .refresh-countdown { font-weight: 700; color: var(--blue); min-width: 24px; }
+    .refresh-bar .spinner-sm {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--border);
+      border-top-color: var(--blue);
+      animation: spin .8s linear infinite;
+    }
+
+    /* ── LOADING ────────────────────────────────────────────── */
+    .skeleton-row { animation: shimmer 1.5s infinite; }
+    @keyframes shimmer { 0%,100%{opacity:.6} 50%{opacity:1} }
+    .skeleton { display: inline-block; background: linear-gradient(90deg, #e8e8ed 25%, #f0f0f5 50%, #e8e8ed 75%); background-size: 200% 100%; animation: skeletonAnim 1.4s infinite; border-radius: 6px; }
+    @keyframes skeletonAnim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    .spinner-wrap { display: flex; align-items: center; justify-content: center; padding: 48px; flex-direction: column; gap: 14px; color: var(--label); font-size: 14px; }
+    .spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--blue);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── EMPTY STATE ────────────────────────────────────────── */
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 24px; gap: 12px; color: var(--label); }
+    .empty-state .empty-icon { font-size: 36px; opacity: .35; }
+    .empty-state h4 { font-size: 16px; font-weight: 600; color: var(--text2); }
+    .empty-state p  { font-size: 14px; text-align: center; max-width: 300px; }
+
+    /* ── TOAST ──────────────────────────────────────────────── */
+    #toast-container { position: fixed; bottom: 28px; right: 28px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none; }
+    .toast {
+      background: rgba(30,30,32,.92);
+      backdrop-filter: blur(16px);
+      color: #fff;
+      border-radius: 12px;
+      padding: 13px 18px;
+      font-size: 14px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.22);
+      pointer-events: auto;
+      animation: toastIn .28s cubic-bezier(.34,1.56,.64,1) forwards;
+      max-width: 340px;
+    }
+    .toast.removing { animation: toastOut .22s ease forwards; }
+    @keyframes toastIn  { from{opacity:0;transform:translateY(14px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes toastOut { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(8px)} }
+    .toast .toast-icon { font-size: 16px; flex-shrink: 0; }
+    .toast.success .toast-icon { color: var(--green); }
+    .toast.error   .toast-icon { color: var(--red); }
+    .toast.info    .toast-icon { color: var(--blue); }
+    .toast.warning .toast-icon { color: var(--orange); }
+
+    /* ── MISC ───────────────────────────────────────────────── */
+    .text-blue   { color: var(--blue); }
+    .text-green  { color: var(--green); }
+    .text-red    { color: var(--red); }
+    .text-orange { color: var(--orange); }
+    .fw-700 { font-weight: 700; }
+    .mt-4 { margin-top: 4px; }
+    .gap-row { display: flex; align-items: center; gap: 8px; }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); transition: transform .25s ease; }
+      .sidebar.open { transform: none; }
+      .main-content { margin-left: 0; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     LOGIN SCREEN
+═════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-mark"><i class="fa-solid fa-brain"></i></div>
+      <div>
+        <h1>NEURAX</h1>
+        <span>Healthcare Platform</span>
+      </div>
+    </div>
+    <h2>Admin Sign In</h2>
+    <p>Enter your credentials to access the admin console.</p>
+    <form id="login-form" autocomplete="on">
+      <div class="form-group">
+        <label for="login-email">Email Address</label>
+        <input type="email" id="login-email" placeholder="admin@neurax.health" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <div id="login-error"></div>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:12px;" id="login-btn">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     APP SHELL
+═════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo-mark"><i class="fa-solid fa-brain"></i></div>
+      <div class="sidebar-brand">
+        <div class="brand-name">NEURAX</div>
+        <div class="brand-role">Super Admin</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+        Dashboard
+        <span class="nav-badge" id="pending-badge" style="display:none">0</span>
+      </div>
+
+      <div class="nav-section-label" style="margin-top:8px;">Management</div>
+      <div class="nav-item" data-page="hospitals" onclick="navigate('hospitals')">
+        <span class="nav-icon"><i class="fa-solid fa-hospital"></i></span>
+        Hospitals
+      </div>
+
+      <div class="nav-section-label" style="margin-top:8px;">System</div>
+      <div class="nav-item" data-page="audit" onclick="navigate('audit')">
+        <span class="nav-icon"><i class="fa-solid fa-scroll"></i></span>
+        Audit Logs
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="u-name" id="user-name">Admin</div>
+          <div class="u-email" id="user-email">admin@neurax.health</div>
+        </div>
+        <button class="logout-btn" onclick="logout()" title="Sign out">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- ── PAGE: DASHBOARD ────────────────────────────── -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+      </div>
+      <div class="page-body">
+
+        <div class="stats-grid" id="stats-grid">
+          <!-- filled by JS -->
+          <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
+          <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
+          <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
+          <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
+          <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
+        </div>
+
+        <div class="section" id="pending-section">
+          <div class="section-header">
+            <i class="fa-solid fa-clock text-orange"></i>
+            <h3>Pending Approvals</h3>
+            <span class="section-meta" id="pending-count-label">Loading…</span>
+          </div>
+          <div class="pending-list" id="pending-list">
+            <div class="spinner-wrap"><div class="spinner"></div><span>Loading hospitals…</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE: HOSPITALS ────────────────────────────── -->
+    <div id="page-hospitals" class="page">
+      <div class="page-header">
+        <h2>Hospitals</h2>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadHospitals()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="section">
+          <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all"       onclick="setHospitalFilter('all',this)">All</button>
+            <button class="filter-btn"         data-filter="pending"  onclick="setHospitalFilter('pending',this)">Pending</button>
+            <button class="filter-btn"         data-filter="approved" onclick="setHospitalFilter('approved',this)">Approved</button>
+            <button class="filter-btn"         data-filter="rejected" onclick="setHospitalFilter('rejected',this)">Rejected</button>
+            <div class="filter-spacer"></div>
+            <input type="search" class="search-input" id="hospital-search" placeholder="&#xf002;  Search hospitals…" oninput="renderHospitalsTable()" />
+          </div>
+          <div class="table-wrap">
+            <table id="hospitals-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Hospital Name</th>
+                  <th>Type</th>
+                  <th>Code</th>
+                  <th>Branches</th>
+                  <th>Status</th>
+                  <th>Registered</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="hospitals-tbody">
+                <tr><td colspan="8"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: AUDIT LOGS ───────────────────────────── -->
+    <div id="page-audit" class="page">
+      <div class="page-header">
+        <h2>Audit Logs</h2>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadAuditLogs(true)">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="section">
+          <div class="refresh-bar" id="audit-refresh-bar">
+            <div class="spinner-sm" id="audit-spinner" style="display:none"></div>
+            <i class="fa-regular fa-clock" id="audit-clock"></i>
+            Auto-refreshing in <span class="refresh-countdown" id="audit-countdown">30</span>s
+            <div style="flex:1"></div>
+            <span id="audit-last-updated" style="font-size:11px;"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Actor Type</th>
+                  <th>Actor ID</th>
+                  <th>Action</th>
+                  <th>Target</th>
+                  <th>IP Address</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="audit-tbody">
+                <tr><td colspan="6"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+═════════════════════════════════════════ -->
+<script>
+  'use strict';
+
+  /* ── STATE ─────────────────────────────────────────────────── */
+  const STATE = {
+    token: null,
+    currentPage: 'dashboard',
+    hospitals: [],
+    hospitalFilter: 'all',
+    expandedRows: new Set(),
+    auditTimer: null,
+    auditCountdown: 30,
+    auditCountdownTimer: null,
+  };
+
+  /* ── INIT ──────────────────────────────────────────────────── */
+  (function init() {
+    const token = localStorage.getItem('neurax_token');
+    const role  = localStorage.getItem('neurax_role');
+    if (token && role === 'admin') {
+      STATE.token = token;
+      showApp();
+    } else {
+      showLogin();
+    }
+  })();
+
+  /* ── AUTH ──────────────────────────────────────────────────── */
+  function showLogin() {
+    document.getElementById('login-screen').classList.add('active');
+    document.getElementById('app').classList.remove('active');
+  }
+
+  function showApp() {
+    document.getElementById('login-screen').classList.remove('active');
+    document.getElementById('app').classList.add('active');
+
+    // seed user info from storage
+    const email = localStorage.getItem('neurax_email') || 'admin@neurax.health';
+    const name  = localStorage.getItem('neurax_name')  || 'Admin';
+    document.getElementById('user-email').textContent = email;
+    document.getElementById('user-name').textContent  = name;
+    document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+
+    navigate('dashboard');
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl    = document.getElementById('login-error');
+    const btn      = document.getElementById('login-btn');
+
+    errEl.textContent = '';
+    if (!email || !password) { errEl.textContent = 'Please enter your email and password.'; return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Signing in…';
+
+    try {
+      const res  = await apiFetch('/api/auth/admin/login', { method: 'POST', body: { email, password } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.detail || 'Invalid credentials.');
+
+      const tok = data.token || data.access_token;
+      if (!tok) throw new Error('No token received.');
+
+      localStorage.setItem('neurax_token', tok);
+      localStorage.setItem('neurax_role',  'admin');
+      localStorage.setItem('neurax_email', email);
+      localStorage.setItem('neurax_name',  data.name || data.admin?.name || 'Admin');
+
+      STATE.token = tok;
+      showToast('Signed in successfully', 'success');
+      showApp();
+    } catch (err) {
+      errEl.textContent = err.message;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In';
+    }
+  });
+
+  function logout() {
+    STATE.token = null;
+    clearAuditTimers();
+    localStorage.removeItem('neurax_token');
+    localStorage.removeItem('neurax_role');
+    localStorage.removeItem('neurax_email');
+    localStorage.removeItem('neurax_name');
+    showLogin();
+    showToast('Signed out', 'info');
+  }
+
+  /* ── NAVIGATION ────────────────────────────────────────────── */
+  function navigate(page) {
+    // hide all pages
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    // update nav
+    document.querySelectorAll('.nav-item').forEach(n => {
+      n.classList.toggle('active', n.dataset.page === page);
+    });
+    // show target
+    document.getElementById(`page-${page}`).classList.add('active');
+    STATE.currentPage = page;
+
+    if (page === 'dashboard') loadDashboard();
+    if (page === 'hospitals') loadHospitals();
+    if (page === 'audit')     { clearAuditTimers(); loadAuditLogs(true); startAuditCountdown(); }
+    else clearAuditTimers();
+  }
+
+  /* ── API HELPER ─────────────────────────────────────────────── */
+  async function apiFetch(url, opts = {}) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (STATE.token) headers['Authorization'] = `Bearer ${STATE.token}`;
+    const body = opts.body ? JSON.stringify(opts.body) : undefined;
+    return fetch(url, { ...opts, headers, body });
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     DASHBOARD
+  ══════════════════════════════════════════════════════════════ */
+  async function loadDashboard() {
+    loadStats();
+    loadPendingHospitals();
+  }
+
+  async function loadStats() {
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = [1,2,3,4,5].map(() => `
+      <div class="stat-card">
+        <div class="skeleton" style="width:40px;height:40px;border-radius:10px;"></div>
+        <div class="skeleton" style="width:70px;height:28px;border-radius:6px;margin-top:4px;"></div>
+        <div class="skeleton" style="width:100px;height:14px;border-radius:4px;"></div>
+      </div>`).join('');
+
+    try {
+      const res  = await apiFetch('/api/admin/stats');
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to load stats.');
+
+      const cfg = [
+        { key: 'total_hospitals',    label: 'Total Hospitals',    icon: 'fa-hospital',        color: '#007AFF' },
+        { key: 'pending_approvals',  label: 'Pending Approvals',  icon: 'fa-clock',           color: '#FF9500' },
+        { key: 'total_branches',     label: 'Total Branches',     icon: 'fa-code-branch',     color: '#34C759' },
+        { key: 'total_patients',     label: 'Total Patients',     icon: 'fa-user-injured',    color: '#AF52DE' },
+        { key: 'total_appointments', label: 'Appointments',       icon: 'fa-calendar-check',  color: '#FF3B30' },
+      ];
+
+      grid.innerHTML = cfg.map(c => {
+        const val = data[c.key] ?? 0;
+        // update pending badge
+        if (c.key === 'pending_approvals') {
+          const badge = document.getElementById('pending-badge');
+          badge.textContent = val;
+          badge.style.display = val > 0 ? '' : 'none';
+        }
+        return `
+          <div class="stat-card">
+            <div class="stat-icon" style="background:${c.color}">
+              <i class="fa-solid ${c.icon}"></i>
+            </div>
+            <div class="stat-value">${formatNumber(val)}</div>
+            <div class="stat-label">${c.label}</div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <i class="fa-solid fa-triangle-exclamation empty-icon text-orange"></i>
+        <h4>Failed to load stats</h4><p>${err.message}</p>
+        <button class="btn btn-ghost btn-sm" onclick="loadStats()">Try Again</button>
+      </div>`;
+    }
+  }
+
+  async function loadPendingHospitals() {
+    const list  = document.getElementById('pending-list');
+    const label = document.getElementById('pending-count-label');
+    list.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div>';
+    label.textContent = 'Loading…';
+
+    try {
+      const res  = await apiFetch('/api/admin/hospitals');
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to load hospitals.');
+
+      const hospitals = Array.isArray(data) ? data : (data.hospitals || data.data || []);
+      const pending   = hospitals.filter(h => (h.status || '').toLowerCase() === 'pending');
+
+      label.textContent = `${pending.length} awaiting review`;
+
+      if (pending.length === 0) {
+        list.innerHTML = `<div class="empty-state">
+          <i class="fa-solid fa-circle-check empty-icon text-green"></i>
+          <h4>All caught up!</h4>
+          <p>No hospitals are currently awaiting approval.</p>
+        </div>`;
+        return;
+      }
+
+      list.innerHTML = pending.map(h => buildPendingCard(h)).join('');
+    } catch (err) {
+      list.innerHTML = `<div class="empty-state">
+        <i class="fa-solid fa-triangle-exclamation empty-icon text-orange"></i>
+        <h4>Error loading hospitals</h4><p>${err.message}</p>
+        <button class="btn btn-ghost btn-sm" onclick="loadPendingHospitals()">Retry</button>
+      </div>`;
+      label.textContent = 'Error';
+    }
+  }
+
+  function buildPendingCard(h) {
+    return `<div class="pending-card" id="pending-card-${h.id}">
+      <div class="pending-avatar"><i class="fa-solid fa-hospital"></i></div>
+      <div class="pending-info">
+        <div class="pending-name">${esc(h.name || h.hospital_name)}</div>
+        <div class="pending-meta">
+          <i class="fa-solid fa-tag" style="margin-right:3px"></i>${esc(h.type || '—')}
+          &nbsp;·&nbsp;
+          <i class="fa-solid fa-code" style="margin-right:3px"></i>${esc(h.code || '—')}
+          &nbsp;·&nbsp;
+          <i class="fa-solid fa-calendar" style="margin-right:3px"></i>${formatDate(h.created_at || h.registered_at)}
+        </div>
+      </div>
+      <div class="pending-actions">
+        <button class="btn btn-success btn-sm" onclick="hospitalAction(${h.id},'approve','pending-card-${h.id}')">
+          <i class="fa-solid fa-check"></i> Approve
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="hospitalAction(${h.id},'reject','pending-card-${h.id}')">
+          <i class="fa-solid fa-xmark"></i> Reject
+        </button>
+      </div>
+    </div>`;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     HOSPITALS
+  ══════════════════════════════════════════════════════════════ */
+  async function loadHospitals() {
+    const tbody = document.getElementById('hospitals-tbody');
+    tbody.innerHTML = `<tr><td colspan="8"><div class="spinner-wrap"><div class="spinner"></div><span>Loading hospitals…</span></div></td></tr>`;
+    STATE.hospitals = [];
+    STATE.expandedRows.clear();
+
+    try {
+      const res  = await apiFetch('/api/admin/hospitals');
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed.');
+
+      STATE.hospitals = Array.isArray(data) ? data : (data.hospitals || data.data || []);
+      renderHospitalsTable();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+        <i class="fa-solid fa-triangle-exclamation empty-icon text-orange"></i>
+        <h4>Could not load hospitals</h4><p>${err.message}</p>
+        <button class="btn btn-ghost btn-sm" onclick="loadHospitals()">Retry</button>
+      </div></td></tr>`;
+    }
+  }
+
+  function setHospitalFilter(filter, btn) {
+    STATE.hospitalFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    STATE.expandedRows.clear();
+    renderHospitalsTable();
+  }
+
+  function renderHospitalsTable() {
+    const tbody  = document.getElementById('hospitals-tbody');
+    const search = (document.getElementById('hospital-search')?.value || '').toLowerCase();
+    const filter = STATE.hospitalFilter;
+
+    let rows = STATE.hospitals.filter(h => {
+      const status = (h.status || '').toLowerCase();
+      const fOk = filter === 'all' || status === filter;
+      if (!fOk) return false;
+      if (!search) return true;
+      const name = (h.name || h.hospital_name || '').toLowerCase();
+      const code = (h.code || '').toLowerCase();
+      const type = (h.type || '').toLowerCase();
+      return name.includes(search) || code.includes(search) || type.includes(search);
+    });
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+        <i class="fa-solid fa-hospital empty-icon"></i>
+        <h4>No hospitals found</h4>
+        <p>Try a different filter or search term.</p>
+      </div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.flatMap(h => buildHospitalRow(h)).join('');
+  }
+
+  function buildHospitalRow(h) {
+    const id      = h.id;
+    const name    = esc(h.name || h.hospital_name || '—');
+    const type    = esc(h.type || '—');
+    const code    = esc(h.code || '—');
+    const status  = (h.status || 'unknown').toLowerCase();
+    const branches = Array.isArray(h.branches) ? h.branches : [];
+    const branchCount = h.branch_count ?? branches.length;
+    const isExpanded  = STATE.expandedRows.has(id);
+    const statusBadge = buildStatusBadge(status);
+    const actionBtns  = buildActionBtns(h);
+
+    const mainRow = `
+      <tr class="expandable" onclick="toggleBranches(${id})" id="hrow-${id}">
+        <td style="width:32px;color:var(--label);font-size:13px;">
+          <i class="fa-solid fa-chevron-${isExpanded ? 'down' : 'right'}" id="hchev-${id}"></i>
+        </td>
+        <td><span class="fw-700">${name}</span></td>
+        <td class="td-muted">${type}</td>
+        <td><span class="badge badge-gray" style="font-family:monospace">${code}</span></td>
+        <td><span class="badge badge-blue"><i class="fa-solid fa-code-branch"></i> ${branchCount}</span></td>
+        <td>${statusBadge}</td>
+        <td class="td-muted">${formatDate(h.created_at || h.registered_at)}</td>
+        <td onclick="event.stopPropagation()">${actionBtns}</td>
+      </tr>`;
+
+    const branchRow = isExpanded ? `
+      <tr class="branch-row" id="branches-${id}">
+        <td colspan="8">
+          <div class="branch-inner">
+            <h5><i class="fa-solid fa-code-branch" style="margin-right:5px"></i>Branches (${branches.length})</h5>
+            ${branches.length > 0
+              ? `<div class="branch-pills">${branches.map(b =>
+                  `<span class="branch-pill"><i class="fa-solid fa-location-dot"></i>${esc(b.name || b.branch_name || b)}</span>`
+                ).join('')}</div>`
+              : `<p style="font-size:13px;color:var(--label)">No branch data available.</p>`
+            }
+          </div>
+        </td>
+      </tr>` : '';
+
+    return [mainRow, branchRow].filter(Boolean);
+  }
+
+  function buildStatusBadge(status) {
+    const map = {
+      approved: `<span class="badge badge-green"><span class="badge-dot" style="background:var(--green)"></span>Approved</span>`,
+      pending:  `<span class="badge badge-orange"><span class="badge-dot" style="background:var(--orange)"></span>Pending</span>`,
+      rejected: `<span class="badge badge-red"><span class="badge-dot" style="background:var(--red)"></span>Rejected</span>`,
+    };
+    return map[status] || `<span class="badge badge-gray">${esc(status)}</span>`;
+  }
+
+  function buildActionBtns(h) {
+    const status = (h.status || '').toLowerCase();
+    if (status === 'pending') {
+      return `
+        <div class="gap-row">
+          <button class="btn btn-success btn-sm" onclick="hospitalAction(${h.id},'approve')">
+            <i class="fa-solid fa-check"></i> Approve
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="hospitalAction(${h.id},'reject')">
+            <i class="fa-solid fa-xmark"></i> Reject
+          </button>
+        </div>`;
+    }
+    if (status === 'approved') {
+      return `<button class="btn btn-danger btn-sm" onclick="hospitalAction(${h.id},'reject')">
+        <i class="fa-solid fa-ban"></i> Revoke
+      </button>`;
+    }
+    if (status === 'rejected') {
+      return `<button class="btn btn-success btn-sm" onclick="hospitalAction(${h.id},'approve')">
+        <i class="fa-solid fa-rotate-left"></i> Re-approve
+      </button>`;
+    }
+    return '—';
+  }
+
+  function toggleBranches(id) {
+    if (STATE.expandedRows.has(id)) STATE.expandedRows.delete(id);
+    else STATE.expandedRows.add(id);
+    renderHospitalsTable();
+  }
+
+  async function hospitalAction(id, action, cardId = null) {
+    const label = action === 'approve' ? 'Approving…' : 'Rejecting…';
+    // Disable buttons in card if cardId given
+    if (cardId) {
+      const card = document.getElementById(cardId);
+      if (card) card.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    }
+
+    try {
+      const res  = await apiFetch(`/api/admin/hospitals/${id}/approve`, {
+        method: 'PUT', body: { action }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.detail || 'Action failed.');
+
+      const msg = action === 'approve' ? 'Hospital approved successfully.' : 'Hospital rejected.';
+      showToast(msg, action === 'approve' ? 'success' : 'info');
+
+      // Refresh both
+      loadPendingHospitals();
+      loadStats();
+      if (STATE.currentPage === 'hospitals') loadHospitals();
+
+    } catch (err) {
+      showToast(err.message, 'error');
+      if (cardId) {
+        const card = document.getElementById(cardId);
+        if (card) card.querySelectorAll('button').forEach(b => { b.disabled = false; });
+      }
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     AUDIT LOGS
+  ══════════════════════════════════════════════════════════════ */
+  async function loadAuditLogs(showSpinner = false) {
+    const tbody   = document.getElementById('audit-tbody');
+    const spinner = document.getElementById('audit-spinner');
+    const clock   = document.getElementById('audit-clock');
+
+    if (showSpinner) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="spinner-wrap"><div class="spinner"></div><span>Loading audit logs…</span></div></td></tr>`;
+    }
+    spinner.style.display = 'block';
+    clock.style.display   = 'none';
+
+    try {
+      const res  = await apiFetch('/api/admin/audit-logs');
+      if (res.status === 401) { logout(); return; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to load audit logs.');
+
+      const logs = Array.isArray(data) ? data : (data.logs || data.data || []);
+      renderAuditLogs(logs);
+
+      document.getElementById('audit-last-updated').textContent = 'Updated ' + formatTime(new Date());
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+        <i class="fa-solid fa-triangle-exclamation empty-icon text-orange"></i>
+        <h4>Failed to load logs</h4><p>${err.message}</p>
+        <button class="btn btn-ghost btn-sm" onclick="loadAuditLogs(true)">Retry</button>
+      </div></td></tr>`;
+    } finally {
+      spinner.style.display = 'none';
+      clock.style.display   = '';
+    }
+  }
+
+  function renderAuditLogs(logs) {
+    const tbody = document.getElementById('audit-tbody');
+    if (!logs.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+        <i class="fa-solid fa-scroll empty-icon"></i>
+        <h4>No audit logs yet</h4>
+        <p>Actions will appear here as they occur.</p>
+      </div></td></tr>`;
+      return;
+    }
+
+    const actorBadge = (type) => {
+      const t = (type || 'unknown').toLowerCase();
+      const map = {
+        admin:    'badge-blue',
+        hospital: 'badge-green',
+        doctor:   'badge-purple',
+        patient:  'badge-orange',
+        system:   'badge-gray',
+      };
+      return `<span class="badge ${map[t] || 'badge-gray'}">${esc(type || '—')}</span>`;
+    };
+
+    tbody.innerHTML = logs.map(log => `
+      <tr>
+        <td>${actorBadge(log.actor_type)}</td>
+        <td class="td-muted" style="font-family:monospace;font-size:12px">${esc(log.actor_id || '—')}</td>
+        <td><span class="fw-700" style="font-size:13px">${esc(log.action || '—')}</span></td>
+        <td class="td-muted">${esc(log.target || log.resource || '—')}</td>
+        <td class="td-muted" style="font-family:monospace;font-size:12px">${esc(log.ip || log.ip_address || '—')}</td>
+        <td class="td-muted" style="white-space:nowrap">${formatDateTime(log.timestamp || log.created_at)}</td>
+      </tr>`).join('');
+  }
+
+  function startAuditCountdown() {
+    STATE.auditCountdown = 30;
+    document.getElementById('audit-countdown').textContent = 30;
+
+    STATE.auditCountdownTimer = setInterval(() => {
+      STATE.auditCountdown--;
+      const el = document.getElementById('audit-countdown');
+      if (el) el.textContent = STATE.auditCountdown;
+      if (STATE.auditCountdown <= 0) {
+        STATE.auditCountdown = 30;
+        if (el) el.textContent = 30;
+      }
+    }, 1000);
+
+    STATE.auditTimer = setInterval(() => {
+      loadAuditLogs(false);
+    }, 30000);
+  }
+
+  function clearAuditTimers() {
+    clearInterval(STATE.auditTimer);
+    clearInterval(STATE.auditCountdownTimer);
+    STATE.auditTimer = null;
+    STATE.auditCountdownTimer = null;
+  }
+
+  /* ── TOAST ─────────────────────────────────────────────────── */
+  function showToast(message, type = 'info') {
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} toast-icon"></i><span>${esc(message)}</span>`;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('removing');
+      el.addEventListener('animationend', () => el.remove());
+    }, 3800);
+  }
+
+  /* ── UTILITIES ─────────────────────────────────────────────── */
+  function esc(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatNumber(n) {
+    if (n == null) return '—';
+    return Number(n).toLocaleString('en-US');
+  }
+
+  function formatDate(str) {
+    if (!str) return '—';
+    try { return new Date(str).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }); }
+    catch { return str; }
+  }
+
+  function formatDateTime(str) {
+    if (!str) return '—';
+    try { return new Date(str).toLocaleString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+    catch { return str; }
+  }
+
+  function formatTime(d) {
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+</script>
+</body>
+</html>

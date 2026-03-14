@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEURAX — Branch Portal</title>
+  <link rel="stylesheet" href="/static/css/apple.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Branch-specific overrides ── */
+    .sidebar-branch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--gray5);
+    }
+    .sidebar-branch-info { flex: 1; min-width: 0; }
+    .sidebar-branch-name { font-size: 14px; font-weight: 600; color: var(--label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-branch-hospital { font-size: 11px; color: var(--gray); font-weight: 500; }
+
+    .sidebar-footer { padding: 12px; border-top: 1px solid var(--gray5); }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.3px; }
+    .page-subtitle { font-size: 14px; color: var(--gray); margin-top: 2px; }
+
+    /* ── Dashboard greeting ── */
+    .greeting-banner {
+      background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      color: white;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .greeting-banner::after {
+      content: '';
+      position: absolute;
+      right: -20px; top: -30px;
+      width: 180px; height: 180px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+    .greeting-banner::before {
+      content: '';
+      position: absolute;
+      right: 60px; bottom: -40px;
+      width: 120px; height: 120px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+    .greeting-time { font-size: 13px; font-weight: 500; opacity: 0.8; }
+    .greeting-name { font-size: 26px; font-weight: 700; margin-top: 4px; letter-spacing: -0.3px; }
+    .greeting-sub  { font-size: 14px; opacity: 0.75; margin-top: 4px; }
+
+    /* ── Filter tabs (pill style) ── */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-tab {
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: var(--gray5);
+      color: var(--gray);
+      font-family: inherit;
+      transition: all 0.18s var(--ease);
+    }
+    .filter-tab.active {
+      background: var(--blue);
+      color: white;
+    }
+    .filter-tab:hover:not(.active) { background: var(--gray4); }
+
+    /* ── Action dropdown ── */
+    .dropdown-wrap { position: relative; display: inline-block; }
+    .dropdown-menu {
+      position: absolute;
+      right: 0; top: calc(100% + 6px);
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      min-width: 160px;
+      z-index: 100;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.95) translateY(-6px);
+      transform-origin: top right;
+      transition: all 0.18s var(--ease);
+    }
+    .dropdown-menu.open {
+      opacity: 1;
+      pointer-events: all;
+      transform: scale(1) translateY(0);
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s;
+      border: none;
+      background: none;
+      width: 100%;
+      font-family: inherit;
+      color: var(--label);
+    }
+    .dropdown-item:hover { background: var(--gray6); }
+    .dropdown-item.danger { color: var(--red); }
+    .dropdown-item.success { color: var(--green); }
+
+    /* ── Read-only badge ── */
+    .readonly-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #FF95001A;
+      border: 1px solid #FF950030;
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
+    }
+
+    /* ── Sub-tabs ── */
+    .subtabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--gray5);
+      margin-bottom: 24px;
+    }
+    .subtab {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--gray);
+      font-family: inherit;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.18s var(--ease);
+    }
+    .subtab.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+    .subtab:hover:not(.active) { color: var(--label); }
+
+    /* ── Patient info grid ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .info-item { display: flex; flex-direction: column; gap: 3px; }
+    .info-label { font-size: 11px; font-weight: 700; color: var(--gray2); text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-value { font-size: 15px; font-weight: 500; color: var(--label); }
+
+    /* ── Vital chip ── */
+    .vital-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .vital-chip {
+      background: var(--gray6);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .vital-chip .vital-label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; }
+    .vital-chip .vital-val { font-size: 18px; font-weight: 700; color: var(--label); }
+
+    /* ── Hospital access card ── */
+    .access-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.18s var(--ease);
+    }
+    .access-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+    /* ── Status update button inline ── */
+    .quick-btn {
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .quick-btn:active { transform: scale(0.96); }
+
+    /* ── Chart container ── */
+    .chart-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .chart-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .chart-subtitle { font-size: 13px; color: var(--gray); margin-bottom: 16px; }
+
+    /* ── Invite pending list ── */
+    .invite-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray5);
+    }
+    .invite-item:last-child { border-bottom: none; }
+
+    /* ── Profile field row ── */
+    .profile-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--gray5);
+    }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-key { font-size: 14px; font-weight: 500; color: var(--label); }
+    .profile-val { font-size: 14px; color: var(--gray); font-weight: 500; }
+
+    /* ── Notification item ── */
+    .notif-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray5);
+      transition: background 0.12s;
+      cursor: pointer;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: var(--gray6); }
+    .notif-item.unread { background: #007AFF06; }
+    .notif-item.unread .notif-title { font-weight: 700; }
+    .notif-icon-wrap {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+    .notif-title { font-size: 14px; font-weight: 500; color: var(--label); }
+    .notif-body  { font-size: 13px; color: var(--gray); margin-top: 2px; }
+    .notif-time  { font-size: 11px; color: var(--gray2); margin-top: 4px; }
+
+    /* ── Large modal override ── */
+    @media (min-width: 600px) {
+      .modal.modal-lg { max-width: 720px; }
+      .modal.modal-xl { max-width: 860px; }
+    }
+
+    /* ── Skeleton rows ── */
+    .skeleton-row { display: flex; gap: 12px; padding: 14px 16px; }
+    .skeleton-row .skeleton { height: 14px; border-radius: 7px; }
+
+    /* ── Cross-hospital request card ── */
+    .req-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .req-card + .req-card { margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════════════════════
+     SIDEBAR
+══════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">NEURAX</div>
+    <div class="sidebar-subtitle" id="sidebarHospital">Loading...</div>
+  </div>
+
+  <div class="sidebar-branch">
+    <div class="stat-icon blue" style="width:40px;height:40px;border-radius:12px;font-size:16px;">
+      <i class="fa-solid fa-hospital"></i>
+    </div>
+    <div class="sidebar-branch-info">
+      <div class="sidebar-branch-name" id="sidebarBranchName">Branch</div>
+      <div class="sidebar-branch-hospital" id="sidebarCity">—</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+
+    <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+      <div class="nav-item-icon"><i class="fa-solid fa-house"></i></div>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" data-page="appointments" onclick="navigate('appointments')">
+      <div class="nav-item-icon"><i class="fa-solid fa-calendar-check"></i></div>
+      <span>Appointments</span>
+    </div>
+    <div class="nav-item" data-page="patients" onclick="navigate('patients')">
+      <div class="nav-item-icon"><i class="fa-solid fa-users"></i></div>
+      <span>Patients</span>
+    </div>
+
+    <div class="nav-section-label">Network</div>
+
+    <div class="nav-item" data-page="other-branches" onclick="navigate('other-branches')">
+      <div class="nav-item-icon"><i class="fa-solid fa-code-branch"></i></div>
+      <span>Other Branches</span>
+    </div>
+    <div class="nav-item" data-page="cross-hospital" onclick="navigate('cross-hospital')">
+      <div class="nav-item-icon"><i class="fa-solid fa-network-wired"></i></div>
+      <span>Cross-Hospital</span>
+    </div>
+    <div class="nav-item" data-page="invite-branch" onclick="navigate('invite-branch')">
+      <div class="nav-item-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+      <span>Invite Branch</span>
+    </div>
+
+    <div class="nav-section-label">Account</div>
+
+    <div class="nav-item" data-page="notifications" onclick="navigate('notifications')">
+      <div class="nav-item-icon"><i class="fa-solid fa-bell"></i></div>
+      <span>Notifications</span>
+      <span class="nav-badge hidden" id="notifBadge">0</span>
+    </div>
+    <div class="nav-item" data-page="profile" onclick="navigate('profile')">
+      <div class="nav-item-icon"><i class="fa-solid fa-building-columns"></i></div>
+      <span>Profile</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-full btn-sm" onclick="logout()" style="justify-content:flex-start;gap:10px;">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- ── DASHBOARD ── -->
+  <section class="page active" id="page-dashboard">
+    <div class="greeting-banner">
+      <div class="greeting-time" id="greetTime"></div>
+      <div class="greeting-name" id="greetName">Good morning</div>
+      <div class="greeting-sub">Here's what's happening at your branch today.</div>
+    </div>
+
+    <div class="grid-4 mb-6" id="dashStats">
+      <!-- stats injected here -->
+      <div class="stat-card"><div class="stat-icon blue skeleton" style="width:52px;height:52px;"></div><div><div class="skeleton mb-2" style="width:80px;height:12px;"></div><div class="skeleton" style="width:50px;height:24px;"></div></div></div>
+      <div class="stat-card"><div class="stat-icon green skeleton" style="width:52px;height:52px;"></div><div><div class="skeleton mb-2" style="width:80px;height:12px;"></div><div class="skeleton" style="width:50px;height:24px;"></div></div></div>
+      <div class="stat-card"><div class="stat-icon orange skeleton" style="width:52px;height:52px;"></div><div><div class="skeleton mb-2" style="width:80px;height:12px;"></div><div class="skeleton" style="width:50px;height:24px;"></div></div></div>
+      <div class="stat-card"><div class="stat-icon purple skeleton" style="width:52px;height:52px;"></div><div><div class="skeleton mb-2" style="width:80px;height:12px;"></div><div class="skeleton" style="width:50px;height:24px;"></div></div></div>
+    </div>
+
+    <div class="grid-2 mb-6" style="gap:20px;">
+      <div class="chart-card">
+        <div class="chart-title">Weekly Appointments</div>
+        <div class="chart-subtitle">Appointments booked this week by day</div>
+        <canvas id="weeklyChart" height="200"></canvas>
+      </div>
+      <div>
+        <div class="section-header" style="padding-top:0;">
+          <span class="section-title" style="font-size:17px;">Recent Appointments</span>
+          <span class="section-action" onclick="navigate('appointments')">See All</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Patient</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="recentApptBody">
+              <tr><td colspan="4"><div class="empty-state" style="padding:30px 20px;"><div class="spinner" style="margin:0 auto;"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── APPOINTMENTS ── -->
+  <section class="page" id="page-appointments">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Appointments</div>
+        <div class="page-subtitle">Manage and update appointment statuses</div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body" style="padding:16px 20px;">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="filter-tabs" id="apptFilterTabs">
+            <button class="filter-tab active" data-status="" onclick="setApptFilter('',this)">All</button>
+            <button class="filter-tab" data-status="pending" onclick="setApptFilter('pending',this)">Pending</button>
+            <button class="filter-tab" data-status="confirmed" onclick="setApptFilter('confirmed',this)">Confirmed</button>
+            <button class="filter-tab" data-status="completed" onclick="setApptFilter('completed',this)">Completed</button>
+            <button class="filter-tab" data-status="cancelled" onclick="setApptFilter('cancelled',this)">Cancelled</button>
+          </div>
+          <div style="margin-left:auto;">
+            <input type="date" class="input" id="apptDateFilter" style="width:auto;" onchange="loadAppointments()" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Patient</th>
+          <th>UID</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr></thead>
+        <tbody id="apptTableBody">
+          <tr><td colspan="7"><div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── PATIENTS ── -->
+  <section class="page" id="page-patients">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Patients</div>
+        <div class="page-subtitle">Patients registered at this branch</div>
+      </div>
+    </div>
+
+    <div class="search-bar mb-4" style="max-width:400px;">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input type="text" class="input" id="patientSearch" placeholder="Search by name or UID…" oninput="debouncePatientSearch()" />
+    </div>
+
+    <div class="list-group" id="patientList">
+      <div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>
+    </div>
+  </section>
+
+  <!-- ── OTHER BRANCHES ── -->
+  <section class="page" id="page-other-branches">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Other Branches</div>
+        <div class="page-subtitle">Branches of your hospital network</div>
+      </div>
+    </div>
+    <div class="readonly-banner">
+      <i class="fa-solid fa-lock"></i>
+      <span>Read Only — You can view data but cannot make edits to other branches.</span>
+    </div>
+    <div class="list-group" id="otherBranchesList">
+      <div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>
+    </div>
+  </section>
+
+  <!-- ── CROSS-HOSPITAL ── -->
+  <section class="page" id="page-cross-hospital">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Cross-Hospital Access</div>
+        <div class="page-subtitle">Manage inter-hospital data sharing</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('requestAccessModal')">
+        <i class="fa-solid fa-plus"></i> Request Access
+      </button>
+    </div>
+
+    <div class="subtabs">
+      <button class="subtab active" data-subtab="incoming" onclick="setCrossTab('incoming',this)">Incoming Requests</button>
+      <button class="subtab" data-subtab="outgoing" onclick="setCrossTab('outgoing',this)">Outgoing</button>
+      <button class="subtab" data-subtab="accessible" onclick="setCrossTab('accessible',this)">Accessible Hospitals</button>
+    </div>
+
+    <div id="crossIncoming">
+      <div id="incomingList"></div>
+    </div>
+    <div id="crossOutgoing" class="hidden">
+      <div id="outgoingList"></div>
+    </div>
+    <div id="crossAccessible" class="hidden">
+      <div id="accessibleList"></div>
+    </div>
+  </section>
+
+  <!-- ── INVITE BRANCH ── -->
+  <section class="page" id="page-invite-branch">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Invite Branch</div>
+        <div class="page-subtitle">Invite another branch of your hospital to join NEURAX</div>
+      </div>
+    </div>
+
+    <div class="card mb-6" style="max-width:480px;">
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Branch Email Address</label>
+          <input type="email" class="input" id="inviteEmail" placeholder="branch@hospital.com" />
+        </div>
+        <button class="btn btn-primary btn-full" onclick="sendInvite()">
+          <i class="fa-solid fa-paper-plane"></i> Send Invite
+        </button>
+      </div>
+    </div>
+
+    <div class="section-header" style="padding-top:0;">
+      <span class="section-title" style="font-size:17px;">Pending Invites</span>
+    </div>
+    <div class="card">
+      <div class="card-body" id="pendingInvitesList">
+        <div class="empty-state" style="padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── NOTIFICATIONS ── -->
+  <section class="page" id="page-notifications">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Notifications</div>
+        <div class="page-subtitle">Branch alerts and updates</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="markAllNotifsRead()">Mark All Read</button>
+    </div>
+    <div class="card">
+      <div id="notifList">
+        <div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PROFILE ── -->
+  <section class="page" id="page-profile">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Branch Profile</div>
+        <div class="page-subtitle">Your branch information</div>
+      </div>
+      <span class="badge badge-gray"><i class="fa-solid fa-lock" style="font-size:10px;"></i> Read Only</span>
+    </div>
+
+    <div class="card" style="max-width:560px;" id="profileCard">
+      <div class="card-body">
+        <div class="flex items-center gap-4 mb-4 pb-4" style="border-bottom:1px solid var(--gray5);">
+          <div class="stat-icon blue" style="width:64px;height:64px;border-radius:18px;font-size:26px;">
+            <i class="fa-solid fa-hospital"></i>
+          </div>
+          <div>
+            <div style="font-size:20px;font-weight:700;" id="profileBranchName">—</div>
+            <div style="font-size:14px;color:var(--gray);" id="profileHospitalName">—</div>
+          </div>
+        </div>
+        <div id="profileRows">
+          <div class="skeleton mb-3" style="height:16px;width:80%;"></div>
+          <div class="skeleton mb-3" style="height:16px;width:60%;"></div>
+          <div class="skeleton" style="height:16px;width:70%;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════ -->
+
+<!-- ── Appointment Status Modal ── -->
+<div class="modal-overlay" id="apptStatusModal">
+  <div class="modal modal-lg">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="apptStatusTitle">Update Appointment</span>
+      <button class="modal-close" onclick="closeModal('apptStatusModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">New Status</label>
+        <select class="input" id="apptStatusSelect">
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <textarea class="input" id="apptStatusNotes" placeholder="Add notes about this update…" rows="3"></textarea>
+      </div>
+      <input type="hidden" id="apptStatusId" />
+      <button class="btn btn-primary btn-full" onclick="submitApptStatus()">
+        <i class="fa-solid fa-check"></i> Update Status
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Patient Detail Modal ── -->
+<div class="modal-overlay" id="patientModal">
+  <div class="modal modal-xl">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="patientModalTitle">Patient Detail</span>
+      <button class="modal-close" onclick="closeModal('patientModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="patientModalBody">
+      <div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Medical Record Sub-Modal ── -->
+<div class="modal-overlay" id="addRecordModal">
+  <div class="modal modal-lg">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Add Medical Record</span>
+      <button class="modal-close" onclick="closeModal('addRecordModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Diagnosis</label>
+        <input type="text" class="input" id="recDiagnosis" placeholder="Primary diagnosis…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prescription</label>
+        <textarea class="input" id="recPrescription" placeholder="Medications and dosage…" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="input" id="recNotes" placeholder="Clinical notes…" rows="2"></textarea>
+      </div>
+      <div class="form-label mb-2">Vitals</div>
+      <div class="vital-grid mb-4">
+        <div class="vital-chip">
+          <div class="vital-label">Blood Pressure</div>
+          <input type="text" class="input" id="recBP" placeholder="e.g. 120/80" style="margin-top:4px;" />
+        </div>
+        <div class="vital-chip">
+          <div class="vital-label">Pulse (bpm)</div>
+          <input type="number" class="input" id="recPulse" placeholder="e.g. 72" style="margin-top:4px;" />
+        </div>
+        <div class="vital-chip">
+          <div class="vital-label">Temperature (°F)</div>
+          <input type="number" class="input" id="recTemp" placeholder="e.g. 98.6" step="0.1" style="margin-top:4px;" />
+        </div>
+        <div class="vital-chip">
+          <div class="vital-label">SpO2 (%)</div>
+          <input type="number" class="input" id="recSpO2" placeholder="e.g. 98" style="margin-top:4px;" />
+        </div>
+      </div>
+      <input type="hidden" id="recPatientId" />
+      <button class="btn btn-primary btn-full" onclick="submitMedicalRecord()">
+        <i class="fa-solid fa-floppy-disk"></i> Save Record
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Other Branch Patients Modal ── -->
+<div class="modal-overlay" id="branchPatientsModal">
+  <div class="modal modal-xl">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="branchPatientsTitle">Branch Patients</span>
+      <button class="modal-close" onclick="closeModal('branchPatientsModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="branchPatientsBody">
+      <div class="readonly-banner">
+        <i class="fa-solid fa-lock"></i>
+        <span>Read Only — You can view but not edit records for this branch.</span>
+      </div>
+      <div id="branchPatientListInner"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Other Branch Patient Records Modal ── -->
+<div class="modal-overlay" id="branchPatientRecordModal">
+  <div class="modal modal-xl">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="branchPatRecTitle">Patient Records</span>
+      <button class="modal-close" onclick="closeModal('branchPatientRecordModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="branchPatRecBody">
+      <div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Cross-Hospital: Request Access Modal ── -->
+<div class="modal-overlay" id="requestAccessModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Request Hospital Access</span>
+      <button class="modal-close" onclick="closeModal('requestAccessModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--gray);margin-bottom:16px;">Enter the hospital code of the hospital you want to request access to. They will need to approve your request.</p>
+      <div class="form-group">
+        <label class="form-label">Hospital Code</label>
+        <input type="text" class="input" id="hospitalCodeInput" placeholder="e.g. HOSP-2024-XYZ" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitAccessRequest()">
+        <i class="fa-solid fa-paper-plane"></i> Send Request
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Cross-Hospital Accessible: Patients View Modal ── -->
+<div class="modal-overlay" id="crossHospPatientsModal">
+  <div class="modal modal-xl">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="crossHospPatientsTitle">Hospital Patients</span>
+      <button class="modal-close" onclick="closeModal('crossHospPatientsModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="crossHospPatientsBody">
+      <div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────────
+   AUTH GUARD
+───────────────────────────────────────────── */
+const token = localStorage.getItem('neurax_token');
+const role  = localStorage.getItem('neurax_role');
+if (!token || role !== 'branch') {
+  window.location.href = '/auth';
+}
+
+/* ─────────────────────────────────────────────
+   GLOBALS
+───────────────────────────────────────────── */
+let currentPage = 'dashboard';
+let apptStatusFilter = '';
+let weeklyChartInstance = null;
+
+/* debounce helper */
+function debounce(fn, ms) {
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+const debouncePatientSearch = debounce(loadPatients, 350);
+
+/* ─────────────────────────────────────────────
+   API HELPER
+───────────────────────────────────────────── */
+async function api(method, path, body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+/* ─────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────── */
+function toast(msg, type = 'info', icon = null) {
+  const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<i class="fa-solid ${icon || icons[type]} toast-icon"></i><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  requestAnimationFrame(() => { requestAnimationFrame(() => el.classList.add('show')); });
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 3500);
+}
+
+/* ─────────────────────────────────────────────
+   NAVIGATION
+───────────────────────────────────────────── */
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  currentPage = page;
+  loadPage(page);
+}
+
+function loadPage(page) {
+  switch (page) {
+    case 'dashboard':     loadDashboard();    break;
+    case 'appointments':  loadAppointments(); break;
+    case 'patients':      loadPatients();     break;
+    case 'other-branches':loadOtherBranches();break;
+    case 'cross-hospital':loadCrossHospital();break;
+    case 'invite-branch': loadInvites();      break;
+    case 'notifications': loadNotifications();break;
+    case 'profile':       loadProfile();      break;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   MODAL HELPERS
+───────────────────────────────────────────── */
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) closeModal(ov.id); });
+});
+
+/* ─────────────────────────────────────────────
+   LOGOUT
+───────────────────────────────────────────── */
+function logout() {
+  localStorage.removeItem('neurax_token');
+  localStorage.removeItem('neurax_role');
+  window.location.href = '/auth';
+}
+
+/* ─────────────────────────────────────────────
+   GREETING
+───────────────────────────────────────────── */
+function initGreeting(branchName) {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greetTime').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('greetName').textContent = `${g}, ${branchName || 'Branch'}!`;
+}
+
+/* ─────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────── */
+function statusBadge(s) {
+  const map = { pending:'badge-pending', confirmed:'badge-confirmed', completed:'badge-completed', cancelled:'badge-cancelled', approved:'badge-approved', rejected:'badge-rejected' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${cap(s)}</span>`;
+}
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+function fmtTime(t) { if (!t) return '—'; try { const [h,m] = t.split(':'); const ap = +h>=12?'PM':'AM'; return `${((+h%12)||12)}:${m} ${ap}`; } catch { return t; } }
+function initials(name) { return (name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function avatar(name, size='md') {
+  const colors = ['#007AFF','#34C759','#FF9500','#AF52DE','#5AC8FA','#FF2D55','#5856D6'];
+  const c = colors[(name||'').charCodeAt(0) % colors.length];
+  return `<div class="avatar avatar-${size}" style="background:${c};">${initials(name)}</div>`;
+}
+
+/* ─────────────────────────────────────────────
+   DASHBOARD
+───────────────────────────────────────────── */
+async function loadDashboard() {
+  try {
+    const data = await api('GET', '/api/branch/dashboard/stats');
+    renderDashStats(data);
+    renderWeeklyChart(data.weekly || []);
+    loadRecentAppointments();
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+}
+
+function renderDashStats(data) {
+  const stats = [
+    { label:'Total Appointments', value: data.total_appointments ?? 0, icon:'fa-calendar', color:'blue' },
+    { label:'Pending',            value: data.pending            ?? 0, icon:'fa-clock',    color:'orange' },
+    { label:'Today',              value: data.today              ?? 0, icon:'fa-calendar-day', color:'green' },
+    { label:'Unique Patients',    value: data.unique_patients    ?? 0, icon:'fa-users',    color:'purple' },
+  ];
+  document.getElementById('dashStats').innerHTML = stats.map(s => `
+    <div class="stat-card">
+      <div class="stat-icon ${s.color}"><i class="fa-solid ${s.icon}"></i></div>
+      <div>
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-value">${s.value}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderWeeklyChart(weekly) {
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const values = days.map((d,i) => {
+    const found = weekly.find(w => w.day === i+1 || w.day_name === d);
+    return found ? found.count : 0;
+  });
+  const ctx = document.getElementById('weeklyChart').getContext('2d');
+  if (weeklyChartInstance) weeklyChartInstance.destroy();
+  weeklyChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [{
+        label: 'Appointments',
+        data: values,
+        backgroundColor: 'rgba(0,122,255,0.15)',
+        borderColor: '#007AFF',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} appointments` } } },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { font: { family: 'Inter', size: 12 }, color: '#8E8E93' } },
+        y: { grid: { color: '#F2F2F7', lineWidth: 1 }, border: { display: false }, ticks: { font: { family: 'Inter', size: 12 }, color: '#8E8E93', stepSize: 1 }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+async function loadRecentAppointments() {
+  const tbody = document.getElementById('recentApptBody');
+  try {
+    const data = await api('GET', '/api/branch/appointments?status=&date=');
+    const appts = (data.appointments || data || []).slice(0, 6);
+    if (!appts.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:24px;"><div class="empty-state-icon"><i class="fa-regular fa-calendar-xmark"></i></div><h4>No appointments</h4></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = appts.map(a => `
+      <tr>
+        <td>
+          <div class="flex items-center gap-2">
+            ${avatar(a.patient_name,'sm')}
+            <span style="font-size:14px;font-weight:500;">${a.patient_name||'—'}</span>
+          </div>
+        </td>
+        <td style="color:var(--gray);font-size:13px;">${fmtTime(a.time)}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td>
+          ${a.status === 'pending' ? `<button class="quick-btn" style="background:#34C7591A;color:var(--green);" onclick="openApptStatus(${a.id},'${a.patient_name}')">Update</button>` : ''}
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:24px;">Failed to load</div></td></tr>`;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   APPOINTMENTS
+───────────────────────────────────────────── */
+let activeDropdownId = null;
+
+async function loadAppointments() {
+  const tbody = document.getElementById('apptTableBody');
+  const date = document.getElementById('apptDateFilter').value;
+  tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div></td></tr>`;
+  try {
+    const params = new URLSearchParams();
+    if (apptStatusFilter) params.append('status', apptStatusFilter);
+    if (date) params.append('date', date);
+    const data = await api('GET', `/api/branch/appointments?${params}`);
+    const appts = data.appointments || data || [];
+    if (!appts.length) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon"><i class="fa-regular fa-calendar-xmark"></i></div><h4>No appointments found</h4><p>Try adjusting your filters.</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = appts.map(a => `
+      <tr>
+        <td>
+          <div class="flex items-center gap-2" style="cursor:pointer;" onclick="openPatientModal(${a.patient_id},'${escHtml(a.patient_name)}')">
+            ${avatar(a.patient_name,'sm')}
+            <span style="font-size:14px;font-weight:500;color:var(--blue);">${escHtml(a.patient_name)||'—'}</span>
+          </div>
+        </td>
+        <td style="font-size:13px;color:var(--gray);">${escHtml(a.patient_uid||'—')}</td>
+        <td style="font-size:13px;">${fmtDate(a.date)}</td>
+        <td style="font-size:13px;">${fmtTime(a.time)}</td>
+        <td style="font-size:13px;max-width:160px;" class="truncate">${escHtml(a.reason||'—')}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td>
+          <div class="dropdown-wrap">
+            <button class="btn btn-ghost btn-sm" style="padding:6px 10px;" onclick="toggleDropdown('dd-${a.id}')">
+              <i class="fa-solid fa-ellipsis"></i>
+            </button>
+            <div class="dropdown-menu" id="dd-${a.id}">
+              <button class="dropdown-item success" onclick="openApptStatus(${a.id},'${escHtml(a.patient_name)}','confirmed');closeDropdowns();">
+                <i class="fa-solid fa-circle-check"></i> Confirm
+              </button>
+              <button class="dropdown-item" style="color:var(--blue);" onclick="openApptStatus(${a.id},'${escHtml(a.patient_name)}','completed');closeDropdowns();">
+                <i class="fa-solid fa-flag-checkered"></i> Complete
+              </button>
+              <button class="dropdown-item danger" onclick="openApptStatus(${a.id},'${escHtml(a.patient_name)}','cancelled');closeDropdowns();">
+                <i class="fa-solid fa-ban"></i> Cancel
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Failed to load: ${e.message}</div></td></tr>`;
+    toast(e.message, 'error');
+  }
+}
+
+function setApptFilter(status, btn) {
+  apptStatusFilter = status;
+  document.querySelectorAll('#apptFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  loadAppointments();
+}
+
+function toggleDropdown(id) {
+  if (activeDropdownId && activeDropdownId !== id) {
+    document.getElementById(activeDropdownId)?.classList.remove('open');
+  }
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  activeDropdownId = el.classList.contains('open') ? id : null;
+}
+function closeDropdowns() {
+  if (activeDropdownId) { document.getElementById(activeDropdownId)?.classList.remove('open'); activeDropdownId = null; }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown-wrap')) closeDropdowns();
+});
+
+function openApptStatus(id, name, preselect) {
+  document.getElementById('apptStatusId').value = id;
+  document.getElementById('apptStatusTitle').textContent = `Update: ${name}`;
+  document.getElementById('apptStatusNotes').value = '';
+  if (preselect) document.getElementById('apptStatusSelect').value = preselect;
+  openModal('apptStatusModal');
+}
+
+async function submitApptStatus() {
+  const id     = document.getElementById('apptStatusId').value;
+  const status = document.getElementById('apptStatusSelect').value;
+  const notes  = document.getElementById('apptStatusNotes').value;
+  try {
+    await api('PUT', `/api/branch/appointments/${id}/status`, { status, notes });
+    toast('Appointment updated successfully', 'success');
+    closeModal('apptStatusModal');
+    if (currentPage === 'dashboard') loadRecentAppointments();
+    if (currentPage === 'appointments') loadAppointments();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+/* ─────────────────────────────────────────────
+   PATIENTS
+───────────────────────────────────────────── */
+async function loadPatients() {
+  const list = document.getElementById('patientList');
+  const search = document.getElementById('patientSearch').value;
+  list.innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  try {
+    const data = await api('GET', `/api/branch/patients?search=${encodeURIComponent(search)}`);
+    const patients = data.patients || data || [];
+    if (!patients.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-users"></i></div><h4>No patients found</h4><p>${search ? 'Try a different search.' : 'No patients registered at this branch yet.'}</p></div>`;
+      return;
+    }
+    list.innerHTML = patients.map(p => `
+      <div class="list-item" onclick="openPatientModal(${p.id},'${escHtml(p.name)}')">
+        ${avatar(p.name,'md')}
+        <div class="list-content">
+          <div class="list-title">${escHtml(p.name)}</div>
+          <div class="list-subtitle">${p.uid||'—'} · ${p.gender||''} · ${p.blood_group||''}</div>
+        </div>
+        <i class="fa-solid fa-chevron-right list-chevron"></i>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty-state">Failed to load patients: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+async function openPatientModal(patientId, patientName) {
+  document.getElementById('patientModalTitle').textContent = patientName || 'Patient Detail';
+  document.getElementById('patientModalBody').innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  openModal('patientModal');
+  try {
+    const data = await api('GET', `/api/branch/patients/${patientId}/records`);
+    renderPatientModal(data, patientId);
+  } catch(e) {
+    document.getElementById('patientModalBody').innerHTML = `<div class="empty-state">Failed to load: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+function renderPatientModal(data, patientId) {
+  const p = data.patient || {};
+  const appts = data.appointments || [];
+  const records = data.records || [];
+
+  const apptRows = appts.length ? appts.map(a => `
+    <tr>
+      <td>${fmtDate(a.date)}</td>
+      <td>${fmtTime(a.time)}</td>
+      <td style="font-size:13px;">${escHtml(a.reason||'—')}</td>
+      <td>${statusBadge(a.status)}</td>
+    </tr>`).join('') :
+    `<tr><td colspan="4"><div class="empty-state" style="padding:20px;"><i class="fa-regular fa-calendar-xmark" style="font-size:28px;opacity:0.3;display:block;margin-bottom:8px;"></i>No appointments</div></td></tr>`;
+
+  const recCards = records.length ? records.map(r => `
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-3">
+          <div style="font-size:15px;font-weight:700;">${escHtml(r.diagnosis||'—')}</div>
+          <div style="font-size:12px;color:var(--gray);">${fmtDate(r.created_at)}</div>
+        </div>
+        ${r.prescription ? `<div class="mb-2"><span class="form-label">Prescription</span><p style="font-size:14px;margin-top:3px;">${escHtml(r.prescription)}</p></div>` : ''}
+        ${r.notes ? `<div class="mb-2"><span class="form-label">Notes</span><p style="font-size:14px;margin-top:3px;">${escHtml(r.notes)}</p></div>` : ''}
+        ${r.vitals ? `
+        <div class="vital-grid mt-3">
+          ${r.vitals.bp ? `<div class="vital-chip"><div class="vital-label">BP</div><div class="vital-val">${escHtml(r.vitals.bp)}</div></div>` : ''}
+          ${r.vitals.pulse ? `<div class="vital-chip"><div class="vital-label">Pulse</div><div class="vital-val">${r.vitals.pulse} bpm</div></div>` : ''}
+          ${r.vitals.temperature ? `<div class="vital-chip"><div class="vital-label">Temp</div><div class="vital-val">${r.vitals.temperature}°F</div></div>` : ''}
+          ${r.vitals.spo2 ? `<div class="vital-chip"><div class="vital-label">SpO2</div><div class="vital-val">${r.vitals.spo2}%</div></div>` : ''}
+        </div>` : ''}
+      </div>
+    </div>`).join('') :
+    `<div class="empty-state" style="padding:28px;"><div class="empty-state-icon"><i class="fa-solid fa-file-medical"></i></div><h4>No records yet</h4></div>`;
+
+  document.getElementById('patientModalBody').innerHTML = `
+    <div class="flex items-center gap-4 mb-4 pb-4" style="border-bottom:1px solid var(--gray5);">
+      ${avatar(p.name,'lg')}
+      <div>
+        <div style="font-size:20px;font-weight:700;">${escHtml(p.name||'—')}</div>
+        <div style="font-size:13px;color:var(--gray);">UID: ${p.uid||'—'}</div>
+      </div>
+    </div>
+    <div class="info-grid mb-4">
+      <div class="info-item"><div class="info-label">Blood Group</div><div class="info-value">${p.blood_group||'—'}</div></div>
+      <div class="info-item"><div class="info-label">Gender</div><div class="info-value">${cap(p.gender)||'—'}</div></div>
+      <div class="info-item"><div class="info-label">Date of Birth</div><div class="info-value">${fmtDate(p.dob)}</div></div>
+      <div class="info-item"><div class="info-label">Emergency Contact</div><div class="info-value">${p.emergency_contact||'—'}</div></div>
+    </div>
+
+    <div class="section-header" style="padding-top:0;">
+      <span style="font-size:17px;font-weight:700;">Appointments</span>
+    </div>
+    <div class="table-wrap mb-4">
+      <table><thead><tr><th>Date</th><th>Time</th><th>Reason</th><th>Status</th></tr></thead>
+      <tbody>${apptRows}</tbody></table>
+    </div>
+
+    <div class="section-header" style="padding-top:0;">
+      <span style="font-size:17px;font-weight:700;">Medical Records</span>
+      <button class="btn btn-primary btn-sm" onclick="openAddRecord(${patientId})">
+        <i class="fa-solid fa-plus"></i> Add Record
+      </button>
+    </div>
+    ${recCards}
+  `;
+}
+
+function openAddRecord(patientId) {
+  document.getElementById('recPatientId').value = patientId;
+  ['recDiagnosis','recPrescription','recNotes','recBP','recPulse','recTemp','recSpO2'].forEach(id => document.getElementById(id).value = '');
+  openModal('addRecordModal');
+}
+
+async function submitMedicalRecord() {
+  const pid = document.getElementById('recPatientId').value;
+  const body = {
+    diagnosis: document.getElementById('recDiagnosis').value,
+    prescription: document.getElementById('recPrescription').value,
+    notes: document.getElementById('recNotes').value,
+    vitals: {
+      bp: document.getElementById('recBP').value,
+      pulse: document.getElementById('recPulse').value,
+      temperature: document.getElementById('recTemp').value,
+      spo2: document.getElementById('recSpO2').value
+    }
+  };
+  if (!body.diagnosis) { toast('Diagnosis is required', 'warning'); return; }
+  try {
+    await api('POST', `/api/branch/patients/${pid}/records`, body);
+    toast('Medical record saved', 'success');
+    closeModal('addRecordModal');
+    openPatientModal(pid, document.getElementById('patientModalTitle').textContent);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+/* ─────────────────────────────────────────────
+   OTHER BRANCHES
+───────────────────────────────────────────── */
+async function loadOtherBranches() {
+  const list = document.getElementById('otherBranchesList');
+  list.innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  try {
+    const data = await api('GET', '/api/branch/other-branches');
+    const branches = data.branches || data || [];
+    if (!branches.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-code-branch"></i></div><h4>No other branches</h4><p>Your hospital has no other branches on NEURAX.</p></div>`;
+      return;
+    }
+    list.innerHTML = branches.map(b => `
+      <div class="list-item" onclick="openBranchPatients(${b.id},'${escHtml(b.name)}')">
+        <div class="list-icon" style="background:#007AFF1A;color:var(--blue);">
+          <i class="fa-solid fa-hospital"></i>
+        </div>
+        <div class="list-content">
+          <div class="list-title">${escHtml(b.name)}</div>
+          <div class="list-subtitle">${escHtml(b.city||'—')}</div>
+        </div>
+        <span class="badge badge-gray text-xs">Read Only</span>
+        <i class="fa-solid fa-chevron-right list-chevron" style="margin-left:8px;"></i>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty-state">Failed to load: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+async function openBranchPatients(branchId, branchName) {
+  document.getElementById('branchPatientsTitle').textContent = branchName;
+  document.getElementById('branchPatientListInner').innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  openModal('branchPatientsModal');
+  try {
+    const data = await api('GET', `/api/branch/other-branches/${branchId}/patients`);
+    const patients = data.patients || data || [];
+    if (!patients.length) {
+      document.getElementById('branchPatientListInner').innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-users"></i></div><h4>No patients</h4></div>`;
+      return;
+    }
+    document.getElementById('branchPatientListInner').innerHTML = `
+      <div class="list-group">
+        ${patients.map(p => `
+        <div class="list-item" onclick="openBranchPatientRecord(${branchId},${p.id},'${escHtml(p.name)}')">
+          ${avatar(p.name,'md')}
+          <div class="list-content">
+            <div class="list-title">${escHtml(p.name)}</div>
+            <div class="list-subtitle">${p.uid||'—'} · ${p.gender||''}</div>
+          </div>
+          <i class="fa-solid fa-chevron-right list-chevron"></i>
+        </div>`).join('')}
+      </div>`;
+  } catch(e) {
+    document.getElementById('branchPatientListInner').innerHTML = `<div class="empty-state">Failed: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+async function openBranchPatientRecord(branchId, patientId, patientName) {
+  document.getElementById('branchPatRecTitle').textContent = patientName;
+  document.getElementById('branchPatRecBody').innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  openModal('branchPatientRecordModal');
+  try {
+    const data = await api('GET', `/api/branch/other-branches/${branchId}/patients/${patientId}`);
+    const p = data.patient || {};
+    const records = data.records || [];
+    const appts = data.appointments || [];
+
+    const recHTML = records.length ? records.map(r => `
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-2">
+            <div style="font-size:15px;font-weight:700;">${escHtml(r.diagnosis||'—')}</div>
+            <div style="font-size:12px;color:var(--gray);">${fmtDate(r.created_at)}</div>
+          </div>
+          ${r.prescription ? `<p style="font-size:14px;color:var(--gray);margin-bottom:6px;">${escHtml(r.prescription)}</p>` : ''}
+          ${r.notes ? `<p style="font-size:13px;color:var(--gray2);">${escHtml(r.notes)}</p>` : ''}
+        </div>
+      </div>`).join('') :
+      `<div class="empty-state" style="padding:28px;"><div class="empty-state-icon"><i class="fa-solid fa-file-medical"></i></div><h4>No records</h4></div>`;
+
+    document.getElementById('branchPatRecBody').innerHTML = `
+      <div class="readonly-banner">
+        <i class="fa-solid fa-lock"></i> Read Only — Cannot edit records of other branches.
+      </div>
+      <div class="flex items-center gap-4 mb-4 pb-4" style="border-bottom:1px solid var(--gray5);">
+        ${avatar(p.name,'lg')}
+        <div>
+          <div style="font-size:20px;font-weight:700;">${escHtml(p.name||'—')}</div>
+          <div style="font-size:13px;color:var(--gray);">${p.uid||'—'}</div>
+        </div>
+      </div>
+      <div class="info-grid mb-4">
+        <div class="info-item"><div class="info-label">Blood Group</div><div class="info-value">${p.blood_group||'—'}</div></div>
+        <div class="info-item"><div class="info-label">Gender</div><div class="info-value">${cap(p.gender)||'—'}</div></div>
+        <div class="info-item"><div class="info-label">DOB</div><div class="info-value">${fmtDate(p.dob)}</div></div>
+        <div class="info-item"><div class="info-label">Emergency</div><div class="info-value">${p.emergency_contact||'—'}</div></div>
+      </div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:12px;">Medical Records</div>
+      ${recHTML}`;
+  } catch(e) {
+    document.getElementById('branchPatRecBody').innerHTML = `<div class="empty-state">Failed: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+/* ─────────────────────────────────────────────
+   CROSS-HOSPITAL
+───────────────────────────────────────────── */
+let crossTab = 'incoming';
+
+function setCrossTab(tab, btn) {
+  crossTab = tab;
+  document.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('crossIncoming').classList.toggle('hidden', tab !== 'incoming');
+  document.getElementById('crossOutgoing').classList.toggle('hidden', tab !== 'outgoing');
+  document.getElementById('crossAccessible').classList.toggle('hidden', tab !== 'accessible');
+  if (tab === 'incoming') loadCrossIncoming();
+  if (tab === 'outgoing') loadCrossOutgoing();
+  if (tab === 'accessible') loadCrossAccessible();
+}
+
+async function loadCrossHospital() {
+  loadCrossIncoming();
+}
+
+async function loadCrossIncoming() {
+  const el = document.getElementById('incomingList');
+  el.innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  try {
+    const data = await api('GET', '/api/branch/cross-hospital/requests');
+    const reqs = (data.requests || data || []).filter(r => r.type === 'incoming' || r.direction === 'incoming');
+    if (!reqs.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-inbox"></i></div><h4>No incoming requests</h4><p>No other hospitals have requested access yet.</p></div>`;
+      return;
+    }
+    el.innerHTML = reqs.map(r => `
+      <div class="req-card">
+        <div class="flex items-center gap-3">
+          <div class="stat-icon blue" style="width:44px;height:44px;border-radius:12px;font-size:18px;"><i class="fa-solid fa-hospital"></i></div>
+          <div>
+            <div style="font-size:15px;font-weight:600;">${escHtml(r.hospital_name||r.from_hospital||'—')}</div>
+            <div style="font-size:12px;color:var(--gray);">Requested ${fmtDate(r.created_at||r.requested_at)}</div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-success btn-sm" onclick="approveRequest(${r.id},true)"><i class="fa-solid fa-check"></i> Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="approveRequest(${r.id},false)"><i class="fa-solid fa-xmark"></i> Reject</button>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state">Failed: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+async function approveRequest(id, approve) {
+  try {
+    if (approve) {
+      await api('PUT', `/api/branch/cross-hospital/${id}/approve`);
+      toast('Access request approved', 'success');
+    } else {
+      await api('PUT', `/api/branch/cross-hospital/${id}/revoke`);
+      toast('Access request rejected', 'info');
+    }
+    loadCrossIncoming();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function loadCrossOutgoing() {
+  const el = document.getElementById('outgoingList');
+  el.innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  try {
+    const data = await api('GET', '/api/branch/cross-hospital/requests');
+    const reqs = (data.requests || data || []).filter(r => r.type === 'outgoing' || r.direction === 'outgoing');
+    if (!reqs.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-paper-plane"></i></div><h4>No outgoing requests</h4><p>Use "Request Access" to reach out to other hospitals.</p></div>`;
+      return;
+    }
+    el.innerHTML = reqs.map(r => `
+      <div class="req-card">
+        <div class="flex items-center gap-3">
+          <div class="stat-icon orange" style="width:44px;height:44px;border-radius:12px;font-size:18px;"><i class="fa-solid fa-hospital"></i></div>
+          <div>
+            <div style="font-size:15px;font-weight:600;">${escHtml(r.hospital_name||r.to_hospital||'—')}</div>
+            <div style="font-size:12px;color:var(--gray);">Sent ${fmtDate(r.created_at||r.requested_at)}</div>
+          </div>
+        </div>
+        ${statusBadge(r.status||'pending')}
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state">Failed: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+async function loadCrossAccessible() {
+  const el = document.getElementById('accessibleList');
+  el.innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  try {
+    const data = await api('GET', '/api/branch/cross-hospital/accessible');
+    const hospitals = data.hospitals || data || [];
+    if (!hospitals.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-hospital-user"></i></div><h4>No accessible hospitals</h4><p>No hospitals have granted you access yet.</p></div>`;
+      return;
+    }
+    el.innerHTML = hospitals.map(h => `
+      <div class="access-card mb-3" onclick="openCrossHospPatients(${h.id},'${escHtml(h.name)}')">
+        <div class="stat-icon green" style="width:44px;height:44px;border-radius:12px;font-size:18px;flex-shrink:0;"><i class="fa-solid fa-hospital"></i></div>
+        <div class="flex-1">
+          <div style="font-size:15px;font-weight:600;">${escHtml(h.name)}</div>
+          <div style="font-size:12px;color:var(--gray);">${h.city||''} · Access granted ${fmtDate(h.granted_at)}</div>
+        </div>
+        <span class="badge badge-green">Access Granted</span>
+        <i class="fa-solid fa-chevron-right" style="color:var(--gray3);"></i>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state">Failed: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+async function submitAccessRequest() {
+  const code = document.getElementById('hospitalCodeInput').value.trim();
+  if (!code) { toast('Please enter a hospital code', 'warning'); return; }
+  try {
+    await api('POST', '/api/branch/cross-hospital/request', { hospital_code: code });
+    toast('Access request sent!', 'success');
+    closeModal('requestAccessModal');
+    document.getElementById('hospitalCodeInput').value = '';
+    if (crossTab === 'outgoing') loadCrossOutgoing();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function openCrossHospPatients(hospitalId, hospitalName) {
+  document.getElementById('crossHospPatientsTitle').textContent = hospitalName;
+  document.getElementById('crossHospPatientsBody').innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  openModal('crossHospPatientsModal');
+  try {
+    const data = await api('GET', `/api/branch/cross-hospital/accessible/${hospitalId}/patients`);
+    const patients = data.patients || data || [];
+    if (!patients.length) {
+      document.getElementById('crossHospPatientsBody').innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-solid fa-users"></i></div><h4>No patients</h4></div>`;
+      return;
+    }
+    document.getElementById('crossHospPatientsBody').innerHTML = `
+      <div class="readonly-banner">
+        <i class="fa-solid fa-lock"></i> Read Only — You have view-only access to this hospital's patients.
+      </div>
+      <div class="list-group">
+        ${patients.map(p => `
+        <div class="list-item">
+          ${avatar(p.name,'md')}
+          <div class="list-content">
+            <div class="list-title">${escHtml(p.name)}</div>
+            <div class="list-subtitle">${p.uid||'—'} · ${p.blood_group||''} · ${cap(p.gender)||''}</div>
+          </div>
+        </div>`).join('')}
+      </div>`;
+  } catch(e) {
+    document.getElementById('crossHospPatientsBody').innerHTML = `<div class="empty-state">Failed: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+/* ─────────────────────────────────────────────
+   INVITE BRANCH
+───────────────────────────────────────────── */
+async function loadInvites() {
+  const el = document.getElementById('pendingInvitesList');
+  el.innerHTML = `<div class="empty-state" style="padding:28px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
+  // Re-use profile call to fetch invites if a dedicated endpoint exists, else fallback
+  try {
+    const data = await api('GET', '/api/branch/invite');
+    const invites = data.invites || data || [];
+    if (!invites.length) {
+      el.innerHTML = `<div class="empty-state" style="padding:28px;"><div class="empty-state-icon"><i class="fa-regular fa-envelope"></i></div><h4>No pending invites</h4></div>`;
+      return;
+    }
+    el.innerHTML = invites.map(inv => `
+      <div class="invite-item">
+        <div>
+          <div style="font-size:14px;font-weight:600;">${escHtml(inv.email)}</div>
+          <div style="font-size:12px;color:var(--gray);">Sent ${fmtDate(inv.created_at)}</div>
+        </div>
+        ${statusBadge(inv.status||'pending')}
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state" style="padding:24px;">No invite data available.</div>`;
+  }
+}
+
+async function sendInvite() {
+  const email = document.getElementById('inviteEmail').value.trim();
+  if (!email || !email.includes('@')) { toast('Please enter a valid email', 'warning'); return; }
+  try {
+    await api('POST', '/api/branch/invite', { email });
+    toast('Invite sent to ' + email, 'success');
+    document.getElementById('inviteEmail').value = '';
+    loadInvites();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+/* ─────────────────────────────────────────────
+   NOTIFICATIONS
+───────────────────────────────────────────── */
+async function loadNotifications() {
+  const el = document.getElementById('notifList');
+  el.innerHTML = `<div class="empty-state"><div class="spinner spinner-lg" style="margin:0 auto;"></div></div>`;
+  try {
+    const data = await api('GET', '/api/branch/notifications');
+    const notifs = data.notifications || data || [];
+    if (!notifs.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fa-regular fa-bell-slash"></i></div><h4>All clear!</h4><p>No notifications.</p></div>`;
+      return;
+    }
+    el.innerHTML = notifs.map(n => {
+      const iconMap = { appointment:'fa-calendar-check', system:'fa-circle-info', alert:'fa-triangle-exclamation', request:'fa-network-wired' };
+      const colorMap = { appointment:'blue', system:'blue', alert:'orange', request:'purple' };
+      const t = n.type || 'system';
+      return `<div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead(${n.id}, this)">
+        <div class="notif-icon-wrap" style="background:var(--${colorMap[t]||'blue'})1A;color:var(--${colorMap[t]||'blue'});">
+          <i class="fa-solid ${iconMap[t]||'fa-bell'}"></i>
+        </div>
+        <div class="flex-1">
+          <div class="notif-title">${escHtml(n.title||n.message||'Notification')}</div>
+          ${n.body||n.description ? `<div class="notif-body">${escHtml(n.body||n.description)}</div>` : ''}
+          <div class="notif-time">${fmtDate(n.created_at)}</div>
+        </div>
+        ${!n.read ? `<div class="notif-dot"></div>` : ''}
+      </div>`;
+    }).join('');
+    const unread = notifs.filter(n => !n.read).length;
+    updateNotifBadge(unread);
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state">Failed to load notifications: ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+async function markNotifRead(id, el) {
+  if (el.classList.contains('unread')) {
+    el.classList.remove('unread');
+    el.querySelector('.notif-dot')?.remove();
+    el.querySelector('.notif-title').style.fontWeight = '500';
+    try { await api('PUT', `/api/branch/notifications/${id}/read`); } catch(_) {}
+    const dots = document.querySelectorAll('#notifList .notif-dot').length;
+    updateNotifBadge(dots);
+  }
+}
+
+async function markAllNotifsRead() {
+  const items = document.querySelectorAll('#notifList .notif-item.unread');
+  items.forEach(item => {
+    item.classList.remove('unread');
+    item.querySelector('.notif-dot')?.remove();
+  });
+  updateNotifBadge(0);
+  toast('All notifications marked as read', 'success');
+}
+
+function updateNotifBadge(count) {
+  const badge = document.getElementById('notifBadge');
+  if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
+}
+
+/* ─────────────────────────────────────────────
+   PROFILE
+───────────────────────────────────────────── */
+async function loadProfile() {
+  try {
+    const data = await api('GET', '/api/branch/profile');
+    const p = data.branch || data;
+    document.getElementById('profileBranchName').textContent = p.branch_name || p.name || '—';
+    document.getElementById('profileHospitalName').textContent = p.hospital_name || '—';
+    document.getElementById('profileRows').innerHTML = [
+      ['Hospital', p.hospital_name],
+      ['Branch Name', p.branch_name || p.name],
+      ['City', p.city],
+      ['Address', p.address],
+      ['Hospital Code', p.hospital_code],
+      ['Branch Code', p.branch_code],
+      ['Phone', p.phone],
+      ['Email', p.email],
+      ['Status', cap(p.status)],
+    ].filter(([,v]) => v).map(([k,v]) => `
+      <div class="profile-row">
+        <span class="profile-key">${k}</span>
+        <span class="profile-val">${escHtml(String(v))}</span>
+      </div>`).join('');
+
+    // also update sidebar
+    if (p.branch_name || p.name) {
+      document.getElementById('sidebarBranchName').textContent = p.branch_name || p.name;
+      initGreeting(p.branch_name || p.name);
+    }
+    if (p.hospital_name) document.getElementById('sidebarHospital').textContent = p.hospital_name;
+    if (p.city) document.getElementById('sidebarCity').textContent = p.city;
+  } catch(e) {
+    document.getElementById('profileRows').innerHTML = `<div class="empty-state" style="padding:24px;">Failed to load profile.</div>`;
+    toast(e.message, 'error');
+  }
+}
+
+/* ─────────────────────────────────────────────
+   SECURITY HELPER
+───────────────────────────────────────────── */
+function escHtml(str) {
+  if (typeof str !== 'string') return str == null ? '' : String(str);
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+/* ─────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────── */
+(async function init() {
+  initGreeting('');
+  try {
+    const data = await api('GET', '/api/branch/profile');
+    const p = data.branch || data;
+    if (p.branch_name || p.name) {
+      document.getElementById('sidebarBranchName').textContent = p.branch_name || p.name;
+      initGreeting(p.branch_name || p.name);
+    }
+    if (p.hospital_name) document.getElementById('sidebarHospital').textContent = p.hospital_name;
+    if (p.city) document.getElementById('sidebarCity').textContent = p.city;
+  } catch(_) {}
+
+  // Load notification count in background
+  try {
+    const data = await api('GET', '/api/branch/notifications');
+    const notifs = data.notifications || data || [];
+    const unread = notifs.filter(n => !n.read).length;
+    updateNotifBadge(unread);
+  } catch(_) {}
+
+  // Load initial page
+  loadPage('dashboard');
+})();
+</script>
+</body>
+</html>

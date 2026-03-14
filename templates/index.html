@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEURAX — Unified Healthcare Platform</title>
+  <link rel="stylesheet" href="/static/css/apple.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { background: white; overflow-x: hidden; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(160deg, #ffffff 0%, #F0F6FF 50%, #E8F4FF 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(0,122,255,0.08) 0%, transparent 70%);
+      top: -200px; right: -200px;
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(52,199,89,0.06) 0%, transparent 70%);
+      bottom: -100px; left: -100px;
+      border-radius: 50%;
+    }
+
+    /* ── Top Nav ── */
+    .top-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      position: relative;
+      z-index: 10;
+    }
+    .nav-logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: var(--blue);
+    }
+    .nav-logo span { color: var(--label); }
+    .nav-actions { display: flex; gap: 12px; align-items: center; }
+    .nav-link {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--gray);
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { color: var(--label); background: var(--gray6); }
+
+    /* ── Hero Content ── */
+    .hero-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px 80px;
+      position: relative;
+      z-index: 10;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #007AFF14;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      border: 1px solid #007AFF26;
+    }
+    .hero-title {
+      font-size: clamp(42px, 6vw, 72px);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      max-width: 800px;
+      margin-bottom: 20px;
+    }
+    .hero-title .highlight {
+      background: linear-gradient(135deg, #007AFF, #5AC8FA);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle {
+      font-size: 19px;
+      color: var(--gray);
+      max-width: 560px;
+      line-height: 1.65;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 60px; }
+    .hero-trust {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--gray);
+      font-weight: 500;
+    }
+    .trust-item i { color: var(--green); }
+
+    /* ── Stats Banner ── */
+    .stats-banner {
+      background: var(--label);
+      padding: 32px 48px;
+      display: flex;
+      justify-content: space-around;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .stats-banner .stat {
+      text-align: center;
+      color: white;
+    }
+    .stats-banner .stat-num {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .stats-banner .stat-label {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    /* ── Features ── */
+    .features {
+      padding: 100px 48px;
+      background: white;
+    }
+    .features-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .features-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 28px;
+      transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      border: 1px solid transparent;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--gray5);
+      background: white;
+    }
+    .feature-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin-bottom: 18px;
+    }
+    .feature-card h4 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--gray);
+      line-height: 1.65;
+    }
+
+    /* ── How It Works ── */
+    .how {
+      padding: 100px 48px;
+      background: var(--bg);
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px;
+      max-width: 1000px;
+      margin: 60px auto 0;
+    }
+    .step {
+      text-align: center;
+    }
+    .step-num {
+      width: 52px; height: 52px;
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0 auto 16px;
+    }
+    .step h4 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .step p  { font-size: 14px; color: var(--gray); line-height: 1.6; }
+
+    /* ── Portal Cards ── */
+    .portals {
+      padding: 100px 48px;
+      background: white;
+    }
+    .portals-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      max-width: 900px;
+      margin: 60px auto 0;
+    }
+    .portal-card {
+      border-radius: 24px;
+      padding: 40px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s var(--ease);
+    }
+    .portal-card:hover { transform: translateY(-4px); }
+    .portal-card.patient {
+      background: linear-gradient(135deg, #007AFF, #5AC8FA);
+      color: white;
+    }
+    .portal-card.hospital {
+      background: linear-gradient(135deg, #1C1C1E, #3A3A3C);
+      color: white;
+    }
+    .portal-icon { font-size: 44px; }
+    .portal-card h3 { font-size: 26px; font-weight: 800; }
+    .portal-card p  { font-size: 15px; opacity: 0.8; line-height: 1.6; }
+    .portal-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 12px 22px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      width: fit-content;
+      transition: background 0.15s;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .portal-btn:hover { background: rgba(255,255,255,0.3); }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--label);
+      color: white;
+      padding: 48px;
+      text-align: center;
+    }
+    footer .footer-logo {
+      font-size: 26px;
+      font-weight: 900;
+      color: white;
+      letter-spacing: -0.3px;
+      margin-bottom: 12px;
+    }
+    footer p { color: rgba(255,255,255,0.4); font-size: 13px; }
+
+    @media (max-width: 768px) {
+      .top-nav { padding: 16px 20px; }
+      .features, .how, .portals { padding: 60px 20px; }
+      .stats-banner { padding: 24px 20px; }
+      .portals-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <nav class="top-nav">
+    <div class="nav-logo">NEUR<span>AX</span></div>
+    <div class="nav-actions">
+      <a href="/auth?mode=patient-login" class="nav-link">Patient Login</a>
+      <a href="/auth?mode=branch-login" class="nav-link">Hospital Login</a>
+      <a href="/auth?mode=patient-register" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </nav>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <i class="fa-solid fa-circle-check"></i>
+      Unified Healthcare Network
+    </div>
+    <h1 class="hero-title">
+      Your Health,<br>
+      <span class="highlight">Connected.</span>
+    </h1>
+    <p class="hero-subtitle">
+      One platform that connects patients, hospitals, and branches seamlessly.
+      Book appointments, access your records, and get AI-powered health guidance — all in one place.
+    </p>
+    <div class="hero-actions">
+      <a href="/auth?mode=patient-register" class="btn btn-primary btn-xl">
+        <i class="fa-solid fa-user-plus"></i> Register as Patient
+      </a>
+      <a href="/auth?mode=branch-register" class="btn btn-ghost btn-xl">
+        <i class="fa-solid fa-hospital"></i> Register Hospital
+      </a>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-item"><i class="fa-solid fa-shield-halved"></i> Secure & Private</div>
+      <div class="trust-item"><i class="fa-solid fa-bolt"></i> Real-time Updates</div>
+      <div class="trust-item"><i class="fa-solid fa-brain"></i> AI-Powered</div>
+      <div class="trust-item"><i class="fa-solid fa-building-columns"></i> Multi-Hospital</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats ── -->
+<div class="stats-banner">
+  <div class="stat"><div class="stat-num">10K+</div><div class="stat-label">Patients Served</div></div>
+  <div class="stat"><div class="stat-num">500+</div><div class="stat-label">Hospital Branches</div></div>
+  <div class="stat"><div class="stat-num">50K+</div><div class="stat-label">Appointments Booked</div></div>
+  <div class="stat"><div class="stat-num">99.9%</div><div class="stat-label">Uptime</div></div>
+</div>
+
+<!-- ── Features ── -->
+<section class="features">
+  <div class="features-header">
+    <div class="features-label">Everything you need</div>
+    <h2>Built for Modern Healthcare</h2>
+    <p style="color:var(--gray);margin-top:12px;font-size:17px">
+      A complete platform for patients and hospitals — not just another chatbot.
+    </p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#007AFF1A;color:var(--blue)"><i class="fa-solid fa-robot"></i></div>
+      <h4>AI Health Assistant</h4>
+      <p>Get personalized health guidance powered by Gemini AI, with context from your actual medical history.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#34C7591A;color:var(--green)"><i class="fa-solid fa-calendar-check"></i></div>
+      <h4>Smart Appointment Booking</h4>
+      <p>Book appointments at any hospital on the platform. Get instant email confirmation with a unique confirmation number.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#FF95001A;color:var(--orange)"><i class="fa-solid fa-id-card"></i></div>
+      <h4>Digital Patient Card</h4>
+      <p>Your complete health identity in one place. Download as PDF or show digitally at any branch.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#AF52DE1A;color:var(--purple)"><i class="fa-solid fa-hospital-user"></i></div>
+      <h4>Unified Medical Records</h4>
+      <p>Your records follow you across all branches of a hospital. No more repeating your history.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#FF3B301A;color:var(--red)"><i class="fa-solid fa-share-nodes"></i></div>
+      <h4>Cross-Hospital Access</h4>
+      <p>Hospitals can request controlled access to your records from other hospitals — with your privacy protected.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#5AC8FA1A;color:var(--teal)"><i class="fa-solid fa-bell"></i></div>
+      <h4>Real-time Notifications</h4>
+      <p>Get instant updates on appointment confirmations, medical record changes, and access requests.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ── -->
+<section class="how">
+  <div style="text-align:center">
+    <div class="features-label">Simple to use</div>
+    <h2>How It Works</h2>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h4>Register</h4>
+      <p>Create your patient account in under 2 minutes. Get a unique Patient ID instantly.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h4>Find a Hospital</h4>
+      <p>Browse hospitals and branches on the platform. Filter by name or location.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h4>Book Appointment</h4>
+      <p>Select your preferred date and time. Receive a confirmation email immediately.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h4>Get Treated</h4>
+      <p>Your records are accessible to the branch. Your health card travels with you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Portals ── -->
+<section class="portals">
+  <div style="text-align:center">
+    <div class="features-label">Two Portals</div>
+    <h2>Built for Everyone</h2>
+  </div>
+  <div class="portals-grid">
+    <div class="portal-card patient">
+      <div class="portal-icon">👤</div>
+      <h3>Patient Portal</h3>
+      <p>Register, book appointments, chat with AI, view your health card, and track your medical history.</p>
+      <a href="/auth?mode=patient-register" class="portal-btn">
+        Get Started <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+    <div class="portal-card hospital">
+      <div class="portal-icon">🏥</div>
+      <h3>Hospital Portal</h3>
+      <p>Manage appointments, view patient records, invite branches, and handle cross-hospital access.</p>
+      <a href="/auth?mode=branch-register" class="portal-btn">
+        Register Hospital <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-logo">NEURAX</div>
+  <p>Unified Healthcare Platform &mdash; Connecting patients and hospitals seamlessly.</p>
+  <p style="margin-top:8px">© 2026 NEURAX. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEURAX — Patient Portal</title>
+  <link rel="stylesheet" href="/static/css/apple.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* ── Sidebar user card ── */
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--gray5);
+    }
+    .sidebar-user-info { flex: 1; min-width: 0; }
+    .sidebar-user-name { font-size: 14px; font-weight: 600; color: var(--label); truncate; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-user-uid  { font-size: 11px; color: var(--gray); font-weight: 500; }
+
+    /* ── Sidebar footer ── */
+    .sidebar-footer {
+      padding: 12px;
+      border-top: 1px solid var(--gray5);
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.3px; }
+    .page-subtitle { font-size: 14px; color: var(--gray); margin-top: 2px; }
+
+    /* ── Greeting banner ── */
+    .greeting-banner {
+      background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      color: white;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .greeting-banner::after {
+      content: '';
+      position: absolute;
+      right: -20px; top: -30px;
+      width: 180px; height: 180px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+    .greeting-banner::before {
+      content: '';
+      position: absolute;
+      right: 60px; bottom: -40px;
+      width: 120px; height: 120px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+    .greeting-time  { font-size: 13px; font-weight: 500; opacity: 0.8; }
+    .greeting-name  { font-size: 26px; font-weight: 700; margin-top: 4px; letter-spacing: -0.3px; }
+    .greeting-sub   { font-size: 14px; opacity: 0.75; margin-top: 4px; }
+
+    /* ── Quick actions ── */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .quick-action {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      border: none;
+      font-family: inherit;
+    }
+    .quick-action:hover  { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .quick-action:active { transform: scale(0.97); }
+    .quick-action-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin: 0 auto 10px;
+    }
+    .quick-action-label { font-size: 12px; font-weight: 600; color: var(--label); line-height: 1.3; }
+
+    /* ── Health Card ── */
+    .health-card-visual {
+      background: linear-gradient(135deg, #1C1C1E 0%, #2C2C2E 60%, #3A3A3C 100%);
+      border-radius: 20px;
+      padding: 28px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-lg);
+    }
+    .health-card-visual::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 200px; height: 200px;
+      background: rgba(0,122,255,0.15);
+      border-radius: 50%;
+    }
+    .health-card-visual::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: 40px;
+      width: 150px; height: 150px;
+      background: rgba(52,199,89,0.1);
+      border-radius: 50%;
+    }
+    .hc-logo      { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.9); letter-spacing: -0.3px; }
+    .hc-uid       { font-size: 13px; font-weight: 500; opacity: 0.5; margin-top: 24px; letter-spacing: 1px; }
+    .hc-name      { font-size: 22px; font-weight: 700; margin-top: 4px; letter-spacing: -0.2px; }
+    .hc-meta      { display: flex; gap: 24px; margin-top: 16px; }
+    .hc-meta-item { }
+    .hc-meta-label { font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+    .hc-meta-value { font-size: 13px; font-weight: 600; margin-top: 2px; }
+    .hc-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px; padding: 4px 10px;
+      font-size: 12px; font-weight: 600;
+    }
+
+    /* ── Timeline (Medical History) ── */
+    .timeline { position: relative; padding-left: 28px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 9px; top: 8px; bottom: 8px;
+      width: 2px;
+      background: var(--gray5);
+    }
+    .timeline-item { position: relative; margin-bottom: 20px; }
+    .timeline-dot {
+      position: absolute;
+      left: -24px; top: 4px;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--blue);
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px var(--blue);
+    }
+    .timeline-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .timeline-date { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+    .timeline-diagnosis { font-size: 15px; font-weight: 600; color: var(--label); margin-top: 4px; }
+    .timeline-prescription { font-size: 13px; color: var(--gray); margin-top: 4px; }
+    .timeline-branch { font-size: 12px; color: var(--blue); font-weight: 500; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+
+    /* ── Chat ── */
+    .chat-layout {
+      display: flex;
+      gap: 16px;
+      height: calc(100vh - 160px);
+    }
+    .chat-sessions-panel {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-sessions-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray5);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .chat-session-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray6);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .chat-session-item:hover { background: var(--gray6); }
+    .chat-session-item.active { background: #007AFF0F; }
+    .chat-session-title { font-size: 13px; font-weight: 600; color: var(--label); truncate; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-session-date  { font-size: 11px; color: var(--gray2); margin-top: 2px; }
+
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .chat-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--gray5);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .chat-mode-tabs { padding: 12px 16px; border-bottom: 1px solid var(--gray5); }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .chat-message { display: flex; gap: 8px; max-width: 75%; }
+    .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .chat-message.ai   { align-self: flex-start; }
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .chat-message.user .chat-bubble {
+      background: var(--blue);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
+    .chat-message.ai .chat-bubble {
+      background: var(--gray5);
+      color: var(--label);
+      border-bottom-left-radius: 6px;
+    }
+    .chat-time { font-size: 10px; color: var(--gray3); margin-top: 4px; text-align: right; }
+    .chat-message.ai .chat-time { text-align: left; }
+    .chat-avatar-sm {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      align-self: flex-end;
+    }
+    .chat-input-area {
+      padding: 12px 16px;
+      border-top: 1px solid var(--gray5);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--gray6);
+      border: 1.5px solid transparent;
+      border-radius: 22px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--label);
+      outline: none;
+      resize: none;
+      min-height: 42px;
+      max-height: 120px;
+      transition: border-color 0.18s;
+      line-height: 1.4;
+    }
+    .chat-input:focus { border-color: var(--blue); background: white; }
+    .chat-send-btn {
+      width: 40px; height: 40px;
+      background: var(--blue);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .chat-send-btn:hover  { background: #0066DD; }
+    .chat-send-btn:active { transform: scale(0.92); }
+    .chat-typing {
+      display: flex; gap: 4px; align-items: center; padding: 10px 14px;
+      background: var(--gray5); border-radius: 18px; border-bottom-left-radius: 6px;
+      width: fit-content;
+    }
+    .chat-typing span {
+      width: 6px; height: 6px; background: var(--gray); border-radius: 50%;
+      animation: typingDot 1.2s infinite;
+    }
+    .chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingDot {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* ── Notifications ── */
+    .notif-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--gray5);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: var(--gray6); }
+    .notif-item.unread { background: #007AFF06; }
+    .notif-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-title { font-size: 14px; font-weight: 600; color: var(--label); }
+    .notif-item.unread .notif-title { font-weight: 700; }
+    .notif-text  { font-size: 13px; color: var(--gray); margin-top: 2px; line-height: 1.4; }
+    .notif-time  { font-size: 11px; color: var(--gray2); margin-top: 4px; }
+    .notif-unread-dot { width: 9px; height: 9px; background: var(--blue); border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+
+    /* ── Appointment item ── */
+    .appt-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+      transition: box-shadow 0.2s;
+    }
+    .appt-card:hover { box-shadow: var(--shadow-md); }
+    .appt-date-badge {
+      background: var(--gray6);
+      border-radius: 12px;
+      padding: 10px 14px;
+      text-align: center;
+      flex-shrink: 0;
+      min-width: 54px;
+    }
+    .appt-date-day   { font-size: 22px; font-weight: 700; color: var(--blue); line-height: 1; }
+    .appt-date-month { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; margin-top: 2px; }
+    .appt-info { flex: 1; min-width: 0; }
+    .appt-reason { font-size: 15px; font-weight: 600; color: var(--label); }
+    .appt-branch { font-size: 13px; color: var(--gray); margin-top: 2px; }
+    .appt-time   { font-size: 12px; color: var(--gray2); margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+
+    /* ── Profile ── */
+    .profile-header-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .profile-avatar-wrap { position: relative; }
+    .profile-info { flex: 1; }
+    .profile-name { font-size: 22px; font-weight: 700; }
+    .profile-uid  { font-size: 13px; color: var(--gray); margin-top: 3px; }
+
+    /* ── Loading overlay ── */
+    .page-loader {
+      display: flex; align-items: center; justify-content: center;
+      padding: 60px 20px;
+    }
+
+    /* ── Responsive mobile menu button ── */
+    .mobile-menu-btn {
+      display: none;
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 100;
+      background: var(--bg-card);
+      border: none;
+      border-radius: var(--radius);
+      width: 40px; height: 40px;
+      align-items: center; justify-content: center;
+      box-shadow: var(--shadow-md);
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--label);
+    }
+    @media (max-width: 768px) {
+      .mobile-menu-btn { display: flex; }
+      .quick-actions { grid-template-columns: 1fr 1fr; }
+      .chat-sessions-panel { display: none; }
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 49;
+    }
+    .sidebar-overlay.show { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Mobile menu button -->
+<button class="mobile-menu-btn" onclick="toggleSidebar()" id="mobileMenuBtn">
+  <i class="fa-solid fa-bars"></i>
+</button>
+
+<!-- Sidebar Overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">NEURAX</div>
+    <div class="sidebar-subtitle">Patient Portal</div>
+  </div>
+
+  <!-- User Info -->
+  <div class="sidebar-user">
+    <div class="avatar avatar-md" id="sidebarAvatar" style="background: var(--blue);">?</div>
+    <div class="sidebar-user-info">
+      <div class="sidebar-user-name" id="sidebarName">Loading…</div>
+      <div class="sidebar-user-uid" id="sidebarUID">—</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+
+    <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+      <div class="nav-item-icon"><i class="fa-solid fa-house"></i></div>
+      Dashboard
+    </div>
+
+    <div class="nav-item" data-page="health-card" onclick="navigate('health-card')">
+      <div class="nav-item-icon"><i class="fa-solid fa-id-card"></i></div>
+      Health Card
+    </div>
+
+    <div class="nav-item" data-page="appointments" onclick="navigate('appointments')">
+      <div class="nav-item-icon"><i class="fa-solid fa-calendar-check"></i></div>
+      Appointments
+    </div>
+
+    <div class="nav-item" data-page="medical-history" onclick="navigate('medical-history')">
+      <div class="nav-item-icon"><i class="fa-solid fa-file-medical"></i></div>
+      Medical History
+    </div>
+
+    <div class="nav-section-label">Support</div>
+
+    <div class="nav-item" data-page="ai-chat" onclick="navigate('ai-chat')">
+      <div class="nav-item-icon"><i class="fa-solid fa-robot"></i></div>
+      AI Chat
+    </div>
+
+    <div class="nav-item" data-page="notifications" onclick="navigate('notifications')">
+      <div class="nav-item-icon"><i class="fa-solid fa-bell"></i></div>
+      Notifications
+      <span class="nav-badge hidden" id="notifBadge">0</span>
+    </div>
+
+    <div class="nav-section-label">Account</div>
+
+    <div class="nav-item" data-page="profile" onclick="navigate('profile')">
+      <div class="nav-item-icon"><i class="fa-solid fa-user"></i></div>
+      Profile
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-sm btn-full" onclick="logout()" style="color: var(--red);">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- ── MAIN CONTENT ── -->
+<main class="main-content">
+
+  <!-- ═══════════════════════════════════════
+       PAGE: DASHBOARD
+  ═══════════════════════════════════════ -->
+  <div class="page active" id="page-dashboard">
+    <!-- Greeting -->
+    <div class="greeting-banner" id="greetingBanner">
+      <div class="greeting-time" id="greetingTime">Good morning</div>
+      <div class="greeting-name" id="greetingName">Patient</div>
+      <div class="greeting-sub">Here's your health summary for today.</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid-3 mb-6" id="dashStats">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-calendar-days"></i></div>
+        <div>
+          <div class="stat-label">Total Appointments</div>
+          <div class="stat-value" id="statTotal">—</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-clock"></i></div>
+        <div>
+          <div class="stat-label">Upcoming</div>
+          <div class="stat-value" id="statUpcoming">—</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+        <div>
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="statCompleted">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Appointments -->
+    <div class="section-header">
+      <span class="section-title">Recent Appointments</span>
+      <span class="section-action" onclick="navigate('appointments')">See All</span>
+    </div>
+    <div id="dashRecentAppts">
+      <div class="page-loader"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section-header mt-6">
+      <span class="section-title">Quick Actions</span>
+    </div>
+    <div class="quick-actions">
+      <button class="quick-action" onclick="navigate('appointments')">
+        <div class="quick-action-icon" style="background:#007AFF1A; color:var(--blue);">
+          <i class="fa-solid fa-calendar-plus"></i>
+        </div>
+        <div class="quick-action-label">Book Appointment</div>
+      </button>
+      <button class="quick-action" onclick="downloadHealthCard()">
+        <div class="quick-action-icon" style="background:#34C7591A; color:var(--green);">
+          <i class="fa-solid fa-download"></i>
+        </div>
+        <div class="quick-action-label">Download Health Card</div>
+      </button>
+      <button class="quick-action" onclick="navigate('ai-chat')">
+        <div class="quick-action-icon" style="background:#AF52DE1A; color:var(--purple);">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="quick-action-label">Chat with AI</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: HEALTH CARD
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-health-card">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Health Card</div>
+        <div class="page-subtitle">Your digital health identity</div>
+      </div>
+      <button class="btn btn-primary" onclick="downloadHealthCard()">
+        <i class="fa-solid fa-download"></i> Download PDF
+      </button>
+    </div>
+
+    <!-- Visual Card -->
+    <div class="health-card-visual" id="hcVisual">
+      <div class="hc-logo">NEURAX</div>
+      <div class="hc-uid" id="hcUID">UID: —</div>
+      <div class="hc-name" id="hcName">—</div>
+      <div class="hc-meta">
+        <div class="hc-meta-item">
+          <div class="hc-meta-label">Date of Birth</div>
+          <div class="hc-meta-value" id="hcDOB">—</div>
+        </div>
+        <div class="hc-meta-item">
+          <div class="hc-meta-label">Gender</div>
+          <div class="hc-meta-value" id="hcGender">—</div>
+        </div>
+        <div class="hc-meta-item">
+          <div class="hc-meta-label">Blood Group</div>
+          <div class="hc-meta-value" id="hcBlood">—</div>
+        </div>
+      </div>
+      <div style="margin-top: 20px;">
+        <span class="hc-chip"><i class="fa-solid fa-phone"></i> <span id="hcEmergency">—</span></span>
+      </div>
+    </div>
+
+    <!-- Recent Appointments on Health Card -->
+    <div class="section-header">
+      <span class="section-title">Recent Appointments</span>
+    </div>
+    <div id="hcAppointments">
+      <div class="page-loader"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Recent Medical Records on Health Card -->
+    <div class="section-header mt-4">
+      <span class="section-title">Recent Records</span>
+    </div>
+    <div id="hcRecords">
+      <div class="page-loader"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: APPOINTMENTS
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-appointments">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Appointments</div>
+        <div class="page-subtitle">Manage your scheduled visits</div>
+      </div>
+      <button class="btn btn-primary" onclick="openBookModal()">
+        <i class="fa-solid fa-plus"></i> Book New
+      </button>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="tabs mb-6" id="apptFilterTabs">
+      <button class="tab active" onclick="filterAppointments('all', this)">All</button>
+      <button class="tab" onclick="filterAppointments('pending', this)">Pending</button>
+      <button class="tab" onclick="filterAppointments('confirmed', this)">Confirmed</button>
+      <button class="tab" onclick="filterAppointments('completed', this)">Completed</button>
+      <button class="tab" onclick="filterAppointments('cancelled', this)">Cancelled</button>
+    </div>
+
+    <div id="appointmentsList">
+      <div class="page-loader"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: MEDICAL HISTORY
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-medical-history">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Medical History</div>
+        <div class="page-subtitle">Your complete health records</div>
+      </div>
+    </div>
+    <div id="medicalHistoryList">
+      <div class="page-loader"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: AI CHAT
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-ai-chat">
+    <div class="chat-layout">
+      <!-- Sessions Panel -->
+      <div class="chat-sessions-panel">
+        <div class="chat-sessions-header">
+          Sessions
+          <button class="btn btn-primary btn-sm" onclick="startNewChatSession()" style="padding:4px 10px; font-size:11px;">
+            <i class="fa-solid fa-plus"></i> New
+          </button>
+        </div>
+        <div id="chatSessionsList" style="flex:1; overflow-y:auto;">
+          <div style="padding:20px; text-align:center; color:var(--gray2); font-size:13px;">No sessions yet</div>
+        </div>
+      </div>
+
+      <!-- Chat Main -->
+      <div class="chat-main">
+        <div class="chat-header">
+          <div class="avatar avatar-sm" style="background: linear-gradient(135deg, var(--blue), var(--purple));">
+            <i class="fa-solid fa-robot" style="font-size:13px;"></i>
+          </div>
+          <div>
+            <div style="font-size:14px; font-weight:700;">NEURAX AI</div>
+            <div style="font-size:11px; color:var(--green); font-weight:500;"><i class="fa-solid fa-circle" style="font-size:7px;"></i> Online</div>
+          </div>
+          <div style="margin-left:auto; font-size:12px; color:var(--gray);" id="chatSessionLabel">New Session</div>
+        </div>
+
+        <div class="chat-mode-tabs">
+          <div class="tabs" id="chatModeTabs">
+            <button class="tab active" onclick="setChatMode('general', this)">General</button>
+            <button class="tab" onclick="setChatMode('symptoms', this)">Symptoms</button>
+            <button class="tab" onclick="setChatMode('medication', this)">Medication</button>
+            <button class="tab" onclick="setChatMode('health', this)">Health</button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-message ai">
+            <div class="chat-avatar-sm" style="background: linear-gradient(135deg, var(--blue), var(--purple));">
+              <i class="fa-solid fa-robot" style="font-size:10px;"></i>
+            </div>
+            <div>
+              <div class="chat-bubble">Hello! I'm the NEURAX AI assistant. How can I help you today? You can ask me about general health, symptoms, medications, or your personal health records.</div>
+              <div class="chat-time">Just now</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <textarea class="chat-input" id="chatInput" placeholder="Type a message…" rows="1"
+            onkeydown="handleChatKey(event)" oninput="autoResizeChatInput(this)"></textarea>
+          <button class="chat-send-btn" onclick="sendChatMessage()" id="chatSendBtn">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: NOTIFICATIONS
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-notifications">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Notifications</div>
+        <div class="page-subtitle" id="notifSubtitle">Loading…</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark All Read</button>
+    </div>
+
+    <div class="card">
+      <div id="notificationsList">
+        <div class="page-loader"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: PROFILE
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-profile">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Profile</div>
+        <div class="page-subtitle">Manage your personal information</div>
+      </div>
+    </div>
+
+    <div class="profile-header-card">
+      <div class="profile-avatar-wrap">
+        <div class="avatar avatar-xl" id="profileAvatar" style="background: var(--blue);">?</div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name" id="profileName">—</div>
+        <div class="profile-uid" id="profileUID">UID: —</div>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;" id="profileChips"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="padding: 20px 20px 0;">
+        <h4>Personal Information</h4>
+      </div>
+      <div class="card-body">
+        <form id="profileForm" onsubmit="saveProfile(event)">
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">First Name</label>
+              <input type="text" class="input" id="pfFirstName" placeholder="First name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name</label>
+              <input type="text" class="input" id="pfLastName" placeholder="Last name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="input" id="pfEmail" placeholder="Email address" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="input" id="pfPhone" placeholder="Phone number" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date of Birth</label>
+              <input type="date" class="input" id="pfDOB" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select class="input" id="pfGender">
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Blood Group</label>
+              <select class="input" id="pfBlood">
+                <option value="">Select blood group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emergency Contact</label>
+              <input type="tel" class="input" id="pfEmergency" placeholder="Emergency contact number" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            <textarea class="input" id="pfAddress" placeholder="Full address" style="min-height:80px;"></textarea>
+          </div>
+          <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
+            <button type="button" class="btn btn-ghost" onclick="loadProfile()">Reset</button>
+            <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+              <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════
+     MODAL: Book Appointment
+═══════════════════════════════════════ -->
+<div class="modal-overlay" id="bookModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Book Appointment</span>
+      <button class="modal-close" onclick="closeBookModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <!-- Step indicator -->
+      <div style="display:flex; gap:8px; margin-bottom:20px;" id="bookStepIndicator">
+        <div style="flex:1; height:3px; border-radius:2px; background:var(--blue);" id="step-bar-1"></div>
+        <div style="flex:1; height:3px; border-radius:2px; background:var(--gray5);" id="step-bar-2"></div>
+        <div style="flex:1; height:3px; border-radius:2px; background:var(--gray5);" id="step-bar-3"></div>
+      </div>
+
+      <!-- Step 1: Hospital -->
+      <div id="bookStep1">
+        <div class="form-group">
+          <label class="form-label">Select Hospital</label>
+          <select class="input" id="bookHospital" onchange="onHospitalChange()">
+            <option value="">Loading hospitals…</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+          <button class="btn btn-primary" onclick="goBookStep(2)" id="bookStep1Next">
+            Next <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Branch -->
+      <div id="bookStep2" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Select Branch</label>
+          <select class="input" id="bookBranch">
+            <option value="">Select a hospital first</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+          <button class="btn btn-ghost" onclick="goBookStep(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button class="btn btn-primary" onclick="goBookStep(3)">
+            Next <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Date, Time, Reason -->
+      <div id="bookStep3" class="hidden">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Appointment Date</label>
+            <input type="date" class="input" id="bookDate" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Preferred Time</label>
+            <input type="time" class="input" id="bookTime" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason for Visit</label>
+          <textarea class="input" id="bookReason" placeholder="Describe your symptoms or reason…" style="min-height:80px;"></textarea>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+          <button class="btn btn-ghost" onclick="goBookStep(2)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button class="btn btn-primary" onclick="submitBooking()" id="bookSubmitBtn">
+            <i class="fa-solid fa-calendar-check"></i> Book Appointment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────
+// Constants & State
+// ─────────────────────────────────────────────
+const API = '';
+const TOKEN_KEY = 'neurax_token';
+
+let state = {
+  profile: null,
+  appointments: [],
+  filteredAppointments: [],
+  apptFilter: 'all',
+  notifications: [],
+  chatMode: 'general',
+  chatSessionId: null,
+  chatSessions: [],
+  hospitals: [],
+  bookStep: 1,
+};
+
+// ─────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function authHeaders() {
+  return { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' };
+}
+
+function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+  window.location.href = '/auth';
+}
+
+async function apiFetch(path, options = {}) {
+  const res = await fetch(API + path, {
+    ...options,
+    headers: { ...authHeaders(), ...(options.headers || {}) },
+  });
+  if (res.status === 401) {
+    logout();
+    throw new Error('Unauthorized');
+  }
+  if (!res.ok) {
+    let errMsg = `Request failed (${res.status})`;
+    try { const d = await res.json(); errMsg = d.detail || d.message || errMsg; } catch {}
+    throw new Error(errMsg);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// ─────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────
+function showToast(message, type = 'info', duration = 3500) {
+  const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} toast-icon"></i><span>${message}</span>`;
+  container.appendChild(toast);
+  requestAnimationFrame(() => { requestAnimationFrame(() => { toast.classList.add('show'); }); });
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, duration);
+}
+
+// ─────────────────────────────────────────────
+// Date helpers
+// ─────────────────────────────────────────────
+function fmtDate(str) {
+  if (!str) return '—';
+  try {
+    return new Date(str).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch { return str; }
+}
+function fmtDateTime(str) {
+  if (!str) return '—';
+  try {
+    return new Date(str).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return str; }
+}
+function fmtTime(str) {
+  if (!str) return '—';
+  try {
+    return new Date(str).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  } catch { return str; }
+}
+function fmtRelative(str) {
+  if (!str) return '';
+  try {
+    const diff = Date.now() - new Date(str).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'Just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return `${d}d ago`;
+  } catch { return str; }
+}
+function getDateParts(str) {
+  if (!str) return { day: '—', month: '—' };
+  try {
+    const d = new Date(str);
+    return {
+      day: d.getDate(),
+      month: d.toLocaleDateString('en-US', { month: 'short' }),
+    };
+  } catch { return { day: '—', month: '—' }; }
+}
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+function initials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+}
+function capitalize(s) {
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ─────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const pageEl = document.getElementById(`page-${page}`);
+  const navEl  = document.querySelector(`[data-page="${page}"]`);
+  if (pageEl) pageEl.classList.add('active');
+  if (navEl)  navEl.classList.add('active');
+
+  closeSidebar();
+
+  // Lazy-load page data
+  if (page === 'dashboard')       loadDashboard();
+  if (page === 'health-card')     loadHealthCard();
+  if (page === 'appointments')    loadAppointments();
+  if (page === 'medical-history') loadMedicalHistory();
+  if (page === 'ai-chat')         loadChatSessions();
+  if (page === 'notifications')   loadNotifications();
+  if (page === 'profile')         renderProfile();
+}
+
+// ─────────────────────────────────────────────
+// Sidebar (mobile)
+// ─────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// ─────────────────────────────────────────────
+// Profile
+// ─────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const data = await apiFetch('/api/patient/profile');
+    state.profile = data;
+    renderSidebarUser(data);
+    renderGreeting(data);
+    renderProfileForm(data);
+    renderProfileHeader(data);
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function renderSidebarUser(p) {
+  const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || 'Patient';
+  document.getElementById('sidebarName').textContent = fullName;
+  document.getElementById('sidebarUID').textContent  = p.uid || p.patient_id || '';
+  const av = document.getElementById('sidebarAvatar');
+  av.textContent = initials(fullName);
+}
+
+function renderGreeting(p) {
+  const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || 'Patient';
+  document.getElementById('greetingTime').textContent = greeting();
+  document.getElementById('greetingName').textContent = fullName;
+}
+
+function renderProfileHeader(p) {
+  const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || 'Patient';
+  document.getElementById('profileName').textContent = fullName;
+  document.getElementById('profileUID').textContent  = 'UID: ' + (p.uid || p.patient_id || '—');
+  const av = document.getElementById('profileAvatar');
+  av.textContent = initials(fullName);
+
+  const chips = document.getElementById('profileChips');
+  chips.innerHTML = '';
+  if (p.blood_group) chips.innerHTML += `<span class="badge badge-red"><i class="fa-solid fa-droplet"></i> ${p.blood_group}</span>`;
+  if (p.gender)      chips.innerHTML += `<span class="badge badge-blue">${capitalize(p.gender)}</span>`;
+  if (p.dob)         chips.innerHTML += `<span class="badge badge-gray"><i class="fa-regular fa-calendar"></i> ${fmtDate(p.dob)}</span>`;
+}
+
+function renderProfileForm(p) {
+  const s = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  s('pfFirstName', p.first_name);
+  s('pfLastName',  p.last_name);
+  s('pfEmail',     p.email);
+  s('pfPhone',     p.phone);
+  s('pfDOB',       p.dob ? p.dob.split('T')[0] : '');
+  s('pfGender',    p.gender);
+  s('pfBlood',     p.blood_group);
+  s('pfEmergency', p.emergency_contact);
+  s('pfAddress',   p.address);
+}
+
+async function saveProfile(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveProfileBtn');
+  setLoading(btn, true, 'Saving…');
+  try {
+    const body = {
+      first_name:        document.getElementById('pfFirstName').value,
+      last_name:         document.getElementById('pfLastName').value,
+      email:             document.getElementById('pfEmail').value,
+      phone:             document.getElementById('pfPhone').value,
+      dob:               document.getElementById('pfDOB').value,
+      gender:            document.getElementById('pfGender').value,
+      blood_group:       document.getElementById('pfBlood').value,
+      emergency_contact: document.getElementById('pfEmergency').value,
+      address:           document.getElementById('pfAddress').value,
+    };
+    await apiFetch('/api/patient/profile', { method: 'PUT', body: JSON.stringify(body) });
+    await loadProfile();
+    showToast('Profile updated successfully!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    setLoading(btn, false, '<i class="fa-solid fa-floppy-disk"></i> Save Changes');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Dashboard
+// ─────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const appts = await apiFetch('/api/patient/appointments');
+    state.appointments = appts || [];
+    const total     = state.appointments.length;
+    const upcoming  = state.appointments.filter(a => ['pending','confirmed'].includes(a.status)).length;
+    const completed = state.appointments.filter(a => a.status === 'completed').length;
+
+    document.getElementById('statTotal').textContent     = total;
+    document.getElementById('statUpcoming').textContent  = upcoming;
+    document.getElementById('statCompleted').textContent = completed;
+
+    const recent = state.appointments.slice(0, 3);
+    renderDashAppts(recent);
+  } catch (e) {
+    showToast(e.message, 'error');
+    document.getElementById('dashRecentAppts').innerHTML = emptyState('calendar-xmark', 'No appointments', 'Book your first appointment to get started.');
+  }
+}
+
+function renderDashAppts(appts) {
+  const el = document.getElementById('dashRecentAppts');
+  if (!appts.length) {
+    el.innerHTML = emptyState('calendar-days', 'No appointments yet', 'Book your first appointment below.');
+    return;
+  }
+  el.innerHTML = appts.map(a => apptCardHTML(a)).join('');
+}
+
+// ─────────────────────────────────────────────
+// Health Card
+// ─────────────────────────────────────────────
+async function loadHealthCard() {
+  try {
+    const data = await apiFetch('/api/patient/card');
+    const p = data.patient || data;
+
+    document.getElementById('hcUID').textContent    = 'UID: ' + (p.uid || p.patient_id || '—');
+    document.getElementById('hcName').textContent   = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || '—';
+    document.getElementById('hcDOB').textContent    = fmtDate(p.dob);
+    document.getElementById('hcGender').textContent = capitalize(p.gender) || '—';
+    document.getElementById('hcBlood').textContent  = p.blood_group || '—';
+    document.getElementById('hcEmergency').textContent = p.emergency_contact || '—';
+
+    // Appointments on card
+    const appts = data.recent_appointments || state.appointments.slice(0, 3);
+    const apptEl = document.getElementById('hcAppointments');
+    if (appts && appts.length) {
+      apptEl.innerHTML = appts.map(a => apptCardHTML(a)).join('');
+    } else {
+      apptEl.innerHTML = emptyState('calendar-days', 'No recent appointments', '');
+    }
+
+    // Records on card
+    const records = data.recent_records || [];
+    const recEl = document.getElementById('hcRecords');
+    if (records.length) {
+      recEl.innerHTML = `<div class="timeline">${records.map(r => timelineItemHTML(r)).join('')}</div>`;
+    } else {
+      recEl.innerHTML = emptyState('file-medical', 'No recent records', '');
+    }
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function downloadHealthCard() {
+  const token = getToken();
+  window.open(`/api/patient/card/pdf?token=${token}`, '_blank');
+}
+
+// ─────────────────────────────────────────────
+// Appointments
+// ─────────────────────────────────────────────
+async function loadAppointments() {
+  document.getElementById('appointmentsList').innerHTML = `<div class="page-loader"><div class="spinner"></div></div>`;
+  try {
+    const data = await apiFetch('/api/patient/appointments');
+    state.appointments = data || [];
+    renderAppointments();
+  } catch (e) {
+    showToast(e.message, 'error');
+    document.getElementById('appointmentsList').innerHTML = emptyState('calendar-xmark', 'Failed to load', e.message);
+  }
+}
+
+function filterAppointments(filter, btn) {
+  state.apptFilter = filter;
+  document.querySelectorAll('#apptFilterTabs .tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAppointments();
+}
+
+function renderAppointments() {
+  const list = state.apptFilter === 'all'
+    ? state.appointments
+    : state.appointments.filter(a => a.status === state.apptFilter);
+
+  const el = document.getElementById('appointmentsList');
+  if (!list.length) {
+    el.innerHTML = emptyState('calendar-days', 'No appointments', `No ${state.apptFilter === 'all' ? '' : state.apptFilter + ' '}appointments found.`);
+    return;
+  }
+  el.innerHTML = list.map(a => apptCardHTML(a, true)).join('');
+}
+
+function apptCardHTML(a, detailed = false) {
+  const { day, month } = getDateParts(a.date || a.appointment_date);
+  const statusMap = { pending: 'badge-pending', confirmed: 'badge-confirmed', completed: 'badge-completed', cancelled: 'badge-cancelled' };
+  const badgeCls = statusMap[a.status] || 'badge-gray';
+  return `
+    <div class="appt-card">
+      <div class="appt-date-badge">
+        <div class="appt-date-day">${day}</div>
+        <div class="appt-date-month">${month}</div>
+      </div>
+      <div class="appt-info">
+        <div class="appt-reason">${a.reason || 'General Consultation'}</div>
+        <div class="appt-branch"><i class="fa-solid fa-hospital" style="font-size:11px;"></i> ${a.branch_name || a.branch || '—'}</div>
+        <div class="appt-time"><i class="fa-regular fa-clock"></i> ${fmtTime(a.date || a.appointment_date)} ${detailed ? '· ' + fmtDate(a.date || a.appointment_date) : ''}</div>
+      </div>
+      <span class="badge ${badgeCls}">${capitalize(a.status || 'pending')}</span>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// Book Appointment Modal
+// ─────────────────────────────────────────────
+function openBookModal() {
+  state.bookStep = 1;
+  document.getElementById('bookModal').classList.add('open');
+  loadHospitals();
+  goBookStep(1);
+}
+function closeBookModal() {
+  document.getElementById('bookModal').classList.remove('open');
+}
+
+async function loadHospitals() {
+  try {
+    const data = await apiFetch('/api/patient/hospitals');
+    state.hospitals = data || [];
+    const sel = document.getElementById('bookHospital');
+    sel.innerHTML = '<option value="">Select a hospital</option>' +
+      state.hospitals.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
+  } catch (e) {
+    showToast('Failed to load hospitals: ' + e.message, 'error');
+  }
+}
+
+async function onHospitalChange() {
+  const id = document.getElementById('bookHospital').value;
+  const branchSel = document.getElementById('bookBranch');
+  branchSel.innerHTML = '<option value="">Loading branches…</option>';
+  if (!id) return;
+  try {
+    const data = await apiFetch(`/api/patient/hospitals/${id}/branches`);
+    branchSel.innerHTML = '<option value="">Select a branch</option>' +
+      (data || []).map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+  } catch (e) {
+    branchSel.innerHTML = '<option value="">Failed to load branches</option>';
+  }
+}
+
+function goBookStep(step) {
+  [1, 2, 3].forEach(n => {
+    document.getElementById(`bookStep${n}`).classList.toggle('hidden', n !== step);
+    const bar = document.getElementById(`step-bar-${n}`);
+    bar.style.background = n <= step ? 'var(--blue)' : 'var(--gray5)';
+  });
+  state.bookStep = step;
+
+  // Validation
+  if (step === 2 && !document.getElementById('bookHospital').value) {
+    showToast('Please select a hospital', 'warning');
+    goBookStep(1); return;
+  }
+  if (step === 3 && !document.getElementById('bookBranch').value) {
+    showToast('Please select a branch', 'warning');
+    goBookStep(2); return;
+  }
+}
+
+async function submitBooking() {
+  const branchId = document.getElementById('bookBranch').value;
+  const date     = document.getElementById('bookDate').value;
+  const time     = document.getElementById('bookTime').value;
+  const reason   = document.getElementById('bookReason').value;
+
+  if (!branchId || !date || !reason) {
+    showToast('Please fill all required fields', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('bookSubmitBtn');
+  setLoading(btn, true, 'Booking…');
+  try {
+    await apiFetch('/api/patient/appointments/book', {
+      method: 'POST',
+      body: JSON.stringify({
+        branch_id: branchId,
+        date: time ? `${date}T${time}:00` : date,
+        reason,
+      }),
+    });
+    closeBookModal();
+    showToast('Appointment booked successfully!', 'success');
+    loadAppointments();
+    loadDashboard();
+    // Reset form
+    ['bookHospital','bookBranch','bookDate','bookTime','bookReason'].forEach(id => { document.getElementById(id).value = ''; });
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    setLoading(btn, false, '<i class="fa-solid fa-calendar-check"></i> Book Appointment');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Medical History
+// ─────────────────────────────────────────────
+async function loadMedicalHistory() {
+  document.getElementById('medicalHistoryList').innerHTML = `<div class="page-loader"><div class="spinner"></div></div>`;
+  try {
+    const data = await apiFetch('/api/patient/medical-history');
+    const records = data || [];
+    const el = document.getElementById('medicalHistoryList');
+    if (!records.length) {
+      el.innerHTML = emptyState('file-medical', 'No medical records', 'Your medical history will appear here after your visits.');
+      return;
+    }
+    el.innerHTML = `<div class="timeline">${records.map(r => timelineItemHTML(r)).join('')}</div>`;
+  } catch (e) {
+    showToast(e.message, 'error');
+    document.getElementById('medicalHistoryList').innerHTML = emptyState('circle-exclamation', 'Failed to load', e.message);
+  }
+}
+
+function timelineItemHTML(r) {
+  return `
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-card">
+        <div class="timeline-date">${fmtDate(r.date || r.created_at)}</div>
+        <div class="timeline-diagnosis">${r.diagnosis || 'Diagnosis not specified'}</div>
+        ${r.prescription ? `<div class="timeline-prescription"><i class="fa-solid fa-pills" style="color:var(--orange);font-size:11px;"></i> ${r.prescription}</div>` : ''}
+        ${r.branch_name || r.branch ? `<div class="timeline-branch"><i class="fa-solid fa-hospital"></i> ${r.branch_name || r.branch}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// AI Chat
+// ─────────────────────────────────────────────
+async function loadChatSessions() {
+  try {
+    const data = await apiFetch('/api/chat/sessions');
+    state.chatSessions = data || [];
+    renderChatSessions();
+  } catch (e) {
+    // Silently fail — sessions are optional
+  }
+}
+
+function renderChatSessions() {
+  const el = document.getElementById('chatSessionsList');
+  if (!state.chatSessions.length) {
+    el.innerHTML = '<div style="padding:20px; text-align:center; color:var(--gray2); font-size:13px;">No sessions yet</div>';
+    return;
+  }
+  el.innerHTML = state.chatSessions.map(s => `
+    <div class="chat-session-item ${state.chatSessionId === s.id ? 'active' : ''}" onclick="loadChatSession('${s.id}')">
+      <div class="chat-session-title">${s.title || 'Chat Session'}</div>
+      <div class="chat-session-date">${fmtRelative(s.created_at)}</div>
+    </div>`).join('');
+}
+
+async function loadChatSession(id) {
+  state.chatSessionId = id;
+  renderChatSessions();
+  try {
+    const data = await apiFetch(`/api/chat/sessions/${id}`);
+    const msgs = data.messages || [];
+    const container = document.getElementById('chatMessages');
+    container.innerHTML = '';
+    msgs.forEach(m => appendChatMessage(m.role === 'user' ? 'user' : 'ai', m.content, false));
+    container.scrollTop = container.scrollHeight;
+    document.getElementById('chatSessionLabel').textContent = data.title || 'Session';
+  } catch (e) {
+    showToast('Failed to load session', 'error');
+  }
+}
+
+function startNewChatSession() {
+  state.chatSessionId = null;
+  document.getElementById('chatSessionLabel').textContent = 'New Session';
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="chat-message ai">
+      <div class="chat-avatar-sm" style="background: linear-gradient(135deg, var(--blue), var(--purple));">
+        <i class="fa-solid fa-robot" style="font-size:10px;"></i>
+      </div>
+      <div>
+        <div class="chat-bubble">Hello! I'm the NEURAX AI assistant. How can I help you today?</div>
+        <div class="chat-time">Just now</div>
+      </div>
+    </div>`;
+  renderChatSessions();
+}
+
+function setChatMode(mode, btn) {
+  state.chatMode = mode;
+  document.querySelectorAll('#chatModeTabs .tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+function autoResizeChatInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  appendChatMessage('user', text);
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Show typing indicator
+  const typingId = 'typing-' + Date.now();
+  const container = document.getElementById('chatMessages');
+  container.innerHTML += `
+    <div class="chat-message ai" id="${typingId}">
+      <div class="chat-avatar-sm" style="background: linear-gradient(135deg, var(--blue), var(--purple));">
+        <i class="fa-solid fa-robot" style="font-size:10px;"></i>
+      </div>
+      <div class="chat-typing"><span></span><span></span><span></span></div>
+    </div>`;
+  container.scrollTop = container.scrollHeight;
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+
+  try {
+    const body = {
+      message: text,
+      mode: state.chatMode,
+    };
+    if (state.chatSessionId) body.session_id = state.chatSessionId;
+
+    const data = await apiFetch('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+
+    // Remove typing indicator
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+
+    const reply = data.response || data.message || data.reply || 'I understand. How can I assist you further?';
+    if (data.session_id && !state.chatSessionId) {
+      state.chatSessionId = data.session_id;
+      document.getElementById('chatSessionLabel').textContent = data.title || 'Session';
+      loadChatSessions();
+    }
+    appendChatMessage('ai', reply);
+  } catch (e) {
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+    appendChatMessage('ai', 'Sorry, I encountered an error. Please try again.');
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function appendChatMessage(role, text, scroll = true) {
+  const container = document.getElementById('chatMessages');
+  const isUser = role === 'user';
+  const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const name = isUser ? (state.profile ? initials([state.profile.first_name, state.profile.last_name].filter(Boolean).join(' ')) : 'ME') : '';
+  container.innerHTML += `
+    <div class="chat-message ${role}">
+      ${isUser ? `<div class="chat-avatar-sm" style="background:var(--blue);">${name}</div>` : `
+      <div class="chat-avatar-sm" style="background: linear-gradient(135deg, var(--blue), var(--purple));">
+        <i class="fa-solid fa-robot" style="font-size:10px;"></i>
+      </div>`}
+      <div>
+        <div class="chat-bubble">${escapeHTML(text)}</div>
+        <div class="chat-time">${timeStr}</div>
+      </div>
+    </div>`;
+  if (scroll) container.scrollTop = container.scrollHeight;
+}
+
+function escapeHTML(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+// ─────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────
+async function loadNotifications() {
+  document.getElementById('notificationsList').innerHTML = `<div class="page-loader"><div class="spinner"></div></div>`;
+  try {
+    const data = await apiFetch('/api/patient/notifications');
+    state.notifications = data || [];
+    renderNotifications();
+    updateNotifBadge();
+  } catch (e) {
+    showToast(e.message, 'error');
+    document.getElementById('notificationsList').innerHTML = emptyState('bell-slash', 'Failed to load', e.message);
+  }
+}
+
+function renderNotifications() {
+  const el = document.getElementById('notificationsList');
+  const unread = state.notifications.filter(n => !n.is_read && !n.read).length;
+  document.getElementById('notifSubtitle').textContent = unread ? `${unread} unread notification${unread > 1 ? 's' : ''}` : 'All caught up!';
+
+  if (!state.notifications.length) {
+    el.innerHTML = emptyState('bell', 'No notifications', 'You\'re all caught up!');
+    return;
+  }
+
+  const iconMap = {
+    appointment: { icon: 'fa-calendar-check', cls: 'green', bg: '#34C7591A' },
+    reminder:    { icon: 'fa-bell',           cls: 'orange', bg: '#FF95001A' },
+    result:      { icon: 'fa-file-medical',   cls: 'blue',   bg: '#007AFF1A' },
+    system:      { icon: 'fa-circle-info',    cls: 'purple', bg: '#AF52DE1A' },
+  };
+
+  el.innerHTML = state.notifications.map(n => {
+    const type = n.type || 'system';
+    const ic   = iconMap[type] || iconMap.system;
+    const isUnread = !n.is_read && !n.read;
+    return `
+      <div class="notif-item ${isUnread ? 'unread' : ''}" onclick="markNotifRead('${n.id}', this)">
+        <div class="notif-icon" style="background:${ic.bg}; color:var(--${ic.cls});">
+          <i class="fa-solid ${ic.icon}"></i>
+        </div>
+        <div class="notif-body">
+          <div class="notif-title">${n.title || 'Notification'}</div>
+          <div class="notif-text">${n.message || n.body || ''}</div>
+          <div class="notif-time">${fmtRelative(n.created_at)}</div>
+        </div>
+        ${isUnread ? '<div class="notif-unread-dot"></div>' : ''}
+      </div>`;
+  }).join('');
+}
+
+async function markNotifRead(id, el) {
+  try {
+    await apiFetch(`/api/patient/notifications/${id}/read`, { method: 'PUT' });
+    const notif = state.notifications.find(n => n.id == id);
+    if (notif) { notif.is_read = true; notif.read = true; }
+    el.classList.remove('unread');
+    const dot = el.querySelector('.notif-unread-dot');
+    if (dot) dot.remove();
+    updateNotifBadge();
+    renderNotifSubtitle();
+  } catch {}
+}
+
+async function markAllRead() {
+  const unread = state.notifications.filter(n => !n.is_read && !n.read);
+  await Promise.allSettled(unread.map(n => apiFetch(`/api/patient/notifications/${n.id}/read`, { method: 'PUT' })));
+  state.notifications.forEach(n => { n.is_read = true; n.read = true; });
+  renderNotifications();
+  updateNotifBadge();
+  showToast('All notifications marked as read', 'success');
+}
+
+function updateNotifBadge() {
+  const unread = state.notifications.filter(n => !n.is_read && !n.read).length;
+  const badge = document.getElementById('notifBadge');
+  if (unread > 0) {
+    badge.textContent = unread;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function renderNotifSubtitle() {
+  const unread = state.notifications.filter(n => !n.is_read && !n.read).length;
+  document.getElementById('notifSubtitle').textContent = unread ? `${unread} unread notification${unread > 1 ? 's' : ''}` : 'All caught up!';
+}
+
+// ─────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────
+function setLoading(btn, loading, label) {
+  if (loading) {
+    btn.disabled = true;
+    btn.dataset.orig = btn.innerHTML;
+    btn.innerHTML = `<div class="spinner spinner-sm" style="border-top-color:white;"></div> ${label}`;
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = label || btn.dataset.orig || btn.innerHTML;
+  }
+}
+
+function emptyState(icon, title, sub) {
+  return `
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fa-solid fa-${icon}"></i></div>
+      <h4>${title}</h4>
+      ${sub ? `<p>${sub}</p>` : ''}
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────
+(async function init() {
+  const token = getToken();
+  if (!token) {
+    window.location.href = '/auth';
+    return;
+  }
+
+  // Set min date for booking
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('bookDate');
+  if (dateEl) dateEl.min = today;
+
+  await loadProfile();
+  loadDashboard();
+
+  // Load notifications count in background
+  try {
+    const notifs = await apiFetch('/api/patient/notifications');
+    state.notifications = notifs || [];
+    updateNotifBadge();
+  } catch {}
+})();
+</script>
+</body>
+</html>
