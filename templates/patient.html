@@ -282,6 +282,28 @@
       line-height: 1.4;
     }
     .chat-input:focus { border-color: var(--blue); background: white; }
+    .chat-mic-btn {
+      width: 40px; height: 40px;
+      background: var(--gray5);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.15s;
+      color: var(--gray);
+      font-size: 15px;
+    }
+    .chat-mic-btn:hover { background: var(--gray4); color: var(--label); }
+    .chat-mic-btn.recording {
+      background: var(--red);
+      color: white;
+      animation: mic-pulse 1s ease-in-out infinite;
+    }
+    @keyframes mic-pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48,.4); }
+      50%       { transform: scale(1.06); box-shadow: 0 0 0 6px rgba(255,59,48,0); }
+    }
     .chat-send-btn {
       width: 40px; height: 40px;
       background: var(--blue);
@@ -310,6 +332,16 @@
     @keyframes typingDot {
       0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
       30% { transform: translateY(-5px); opacity: 1; }
+    }
+    .chat-cursor {
+      display: inline-block;
+      animation: cursorBlink 0.7s step-end infinite;
+      color: var(--blue);
+      font-weight: 300;
+    }
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
 
     /* ── Notifications ── */
@@ -472,6 +504,11 @@
       Medical History
     </div>
 
+    <div class="nav-item" data-page="hospitals-nearby" onclick="navigate('hospitals-nearby')">
+      <div class="nav-item-icon"><i class="fa-solid fa-location-dot"></i></div>
+      Hospitals Near Me
+    </div>
+
     <div class="nav-section-label">Support</div>
 
     <div class="nav-item" data-page="ai-chat" onclick="navigate('ai-chat')">
@@ -609,6 +646,7 @@
       </div>
       <div style="margin-top: 20px;">
         <span class="hc-chip"><i class="fa-solid fa-phone"></i> <span id="hcEmergency">—</span></span>
+        <span class="hc-chip" style="margin-left:10px;"><i class="fa-solid fa-id-badge"></i> <span id="hcUIDChip">—</span></span>
       </div>
     </div>
 
@@ -727,6 +765,9 @@
         <div class="chat-input-area">
           <textarea class="chat-input" id="chatInput" placeholder="Type a message…" rows="1"
             onkeydown="handleChatKey(event)" oninput="autoResizeChatInput(this)"></textarea>
+          <button class="chat-mic-btn" id="chatMicBtn" onclick="toggleVoiceInput()" title="Voice input">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
           <button class="chat-send-btn" onclick="sendChatMessage()" id="chatSendBtn">
             <i class="fa-solid fa-paper-plane"></i>
           </button>
@@ -738,13 +779,47 @@
   <!-- ═══════════════════════════════════════
        PAGE: NOTIFICATIONS
   ═══════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════
+       PAGE: HOSPITALS NEAR ME
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-hospitals-nearby">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Hospitals Near Me</div>
+        <div class="page-subtitle" id="nearbySubtitle">Finding hospitals around you…</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="loadHospitalsNearby()">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+    </div>
+
+    <!-- Map -->
+    <div class="card" style="padding:0; overflow:hidden; margin-bottom:16px;">
+      <div id="nearbyMap" style="width:100%; height:320px; background:var(--gray6);
+           display:flex; align-items:center; justify-content:center;">
+        <div style="text-align:center; color:var(--gray);">
+          <i class="fa-solid fa-map-location-dot" style="font-size:40px; margin-bottom:8px; display:block;"></i>
+          Allow location access to view map
+        </div>
+      </div>
+    </div>
+
+    <!-- Results list -->
+    <div id="nearbyList">
+      <div class="page-loader"><div class="spinner"></div></div>
+    </div>
+  </div>
+
   <div class="page" id="page-notifications">
     <div class="page-header">
       <div>
         <div class="page-title">Notifications</div>
         <div class="page-subtitle" id="notifSubtitle">Loading…</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark All Read</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark All Read</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="clearAllNotifications()">Clear All</button>
+      </div>
     </div>
 
     <div class="card">
@@ -868,11 +943,26 @@
 
       <!-- Step 1: Hospital -->
       <div id="bookStep1">
-        <div class="form-group">
-          <label class="form-label">Select Hospital</label>
-          <select class="input" id="bookHospital" onchange="onHospitalChange()">
-            <option value="">Loading hospitals…</option>
-          </select>
+        <div class="form-group" style="position:relative;">
+          <label class="form-label">Search Hospital</label>
+          <input type="text" class="input" id="bookHospitalSearch" placeholder="Type hospital name…"
+            oninput="filterHospitalResults(this.value)" autocomplete="off" />
+          <div id="bookHospitalResults" style="
+            position:absolute; top:100%; left:0; right:0; z-index:200;
+            background:var(--card-bg); border:1px solid var(--separator);
+            border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.12);
+            max-height:220px; overflow-y:auto; display:none; margin-top:4px;
+          "></div>
+          <input type="hidden" id="bookHospital" />
+          <div id="bookHospitalSelected" style="margin-top:8px;display:none;">
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--blue)0D;border-radius:10px;border:1px solid var(--blue)33;">
+              <i class="fa-solid fa-hospital" style="color:var(--blue);"></i>
+              <span id="bookHospitalSelectedName" style="font-size:14px;font-weight:600;color:var(--label);flex:1;"></span>
+              <button onclick="clearHospitalSelection()" style="background:none;border:none;cursor:pointer;color:var(--gray2);padding:2px 4px;" title="Change">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
         </div>
         <div style="display:flex; justify-content:flex-end; margin-top:8px;">
           <button class="btn btn-primary" onclick="goBookStep(2)" id="bookStep1Next">
@@ -881,23 +971,42 @@
         </div>
       </div>
 
-      <!-- Step 2: Branch -->
+      <!-- Step 2: Reason + AI Doctor Matching -->
       <div id="bookStep2" class="hidden">
         <div class="form-group">
-          <label class="form-label">Select Branch</label>
-          <select class="input" id="bookBranch">
-            <option value="">Select a hospital first</option>
-          </select>
+          <label class="form-label">Reason for Visit</label>
+          <textarea class="input" id="bookReason" placeholder="Describe your symptoms or reason…" style="min-height:80px;resize:none;"></textarea>
         </div>
-        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+
+        <!-- AI result area -->
+        <div id="bookDoctorSection" style="display:none;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <div style="flex:1;height:1px;background:var(--separator);"></div>
+            <span style="font-size:12px;color:var(--gray2);white-space:nowrap;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--blue);margin-right:4px;"></i>
+              AI suggested: <strong id="bookSpecLabel" style="color:var(--blue);"></strong>
+            </span>
+            <div style="flex:1;height:1px;background:var(--separator);"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Select Doctor <span style="color:var(--gray2);font-weight:400;">(optional)</span></label>
+            <div id="bookDoctorList" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
+            <input type="hidden" id="bookDoctor" />
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:12px; gap:8px;">
           <button class="btn btn-ghost" onclick="goBookStep(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button class="btn btn-secondary" id="bookFindDoctorsBtn" onclick="findDoctors()">
+            <i class="fa-solid fa-magnifying-glass-plus"></i> Find Doctors
+          </button>
           <button class="btn btn-primary" onclick="goBookStep(3)">
             Next <i class="fa-solid fa-arrow-right"></i>
           </button>
         </div>
       </div>
 
-      <!-- Step 3: Date, Time, Reason -->
+      <!-- Step 3: Date, Time, Confirm -->
       <div id="bookStep3" class="hidden">
         <div class="grid-2">
           <div class="form-group">
@@ -908,10 +1017,6 @@
             <label class="form-label">Preferred Time</label>
             <input type="time" class="input" id="bookTime" />
           </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Reason for Visit</label>
-          <textarea class="input" id="bookReason" placeholder="Describe your symptoms or reason…" style="min-height:80px;"></textarea>
         </div>
         <div style="display:flex; justify-content:space-between; margin-top:8px;">
           <button class="btn btn-ghost" onclick="goBookStep(2)"><i class="fa-solid fa-arrow-left"></i> Back</button>
@@ -1052,6 +1157,10 @@ function initials(name) {
   if (!name) return '?';
   return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
 }
+function copyUID(uid) {
+  navigator.clipboard.writeText(uid).then(() => showToast('UID copied!', 'success')).catch(() => {});
+}
+
 function capitalize(s) {
   if (!s) return '';
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -1077,6 +1186,7 @@ function navigate(page) {
   if (page === 'appointments')    loadAppointments();
   if (page === 'medical-history') loadMedicalHistory();
   if (page === 'ai-chat')         loadChatSessions();
+  if (page === 'hospitals-nearby') loadHospitalsNearby();
   if (page === 'notifications')   loadNotifications();
   if (page === 'profile')         renderProfile();
 }
@@ -1126,7 +1236,10 @@ function renderGreeting(p) {
 function renderProfileHeader(p) {
   const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || 'Patient';
   document.getElementById('profileName').textContent = fullName;
-  document.getElementById('profileUID').textContent  = 'UID: ' + (p.uid || p.patient_id || '—');
+  const uid = p.patient_uid || '—';
+  document.getElementById('profileUID').innerHTML =
+    `UID: <span id="profileUIDValue">${uid}</span>` +
+    (uid !== '—' ? ` <button onclick="copyUID('${uid}')" title="Copy UID" style="background:none;border:none;cursor:pointer;color:var(--blue);padding:0 4px;font-size:12px;"><i class="fa-regular fa-copy"></i></button>` : '');
   const av = document.getElementById('profileAvatar');
   av.textContent = initials(fullName);
 
@@ -1216,12 +1329,16 @@ async function loadHealthCard() {
     const data = await apiFetch('/api/patient/card');
     const p = data.patient || data;
 
-    document.getElementById('hcUID').textContent    = 'UID: ' + (p.uid || p.patient_id || '—');
+    const hcUid = p.patient_uid || '—';
+    document.getElementById('hcUID').innerHTML =
+      `UID: ${hcUid}` +
+      (hcUid !== '—' ? ` <button onclick="copyUID('${hcUid}')" title="Copy UID" style="background:none;border:none;cursor:pointer;color:#fff;padding:0 4px;font-size:11px;opacity:0.8;"><i class="fa-regular fa-copy"></i></button>` : '');
+    document.getElementById('hcUIDChip').textContent = hcUid;
     document.getElementById('hcName').textContent   = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.name || '—';
     document.getElementById('hcDOB').textContent    = fmtDate(p.dob);
     document.getElementById('hcGender').textContent = capitalize(p.gender) || '—';
     document.getElementById('hcBlood').textContent  = p.blood_group || '—';
-    document.getElementById('hcEmergency').textContent = p.emergency_contact || '—';
+    document.getElementById('hcEmergency').textContent = p.phone || '—';
 
     // Appointments on card
     const appts = data.recent_appointments || state.appointments.slice(0, 3);
@@ -1297,7 +1414,8 @@ function apptCardHTML(a, detailed = false) {
       </div>
       <div class="appt-info">
         <div class="appt-reason">${a.reason || 'General Consultation'}</div>
-        <div class="appt-branch"><i class="fa-solid fa-hospital" style="font-size:11px;"></i> ${a.branch_name || a.branch || '—'}</div>
+        <div class="appt-branch"><i class="fa-solid fa-hospital" style="font-size:11px;"></i> ${a.hospital_name || '—'}</div>
+        ${a.doctor_name ? `<div class="appt-branch"><i class="fa-solid fa-user-doctor" style="font-size:11px;"></i> ${a.doctor_name}${a.doctor_specialization ? ' · ' + a.doctor_specialization : ''}</div>` : ''}
         <div class="appt-time"><i class="fa-regular fa-clock"></i> ${fmtTime(a.date || a.appointment_date)} ${detailed ? '· ' + fmtDate(a.date || a.appointment_date) : ''}</div>
       </div>
       <span class="badge ${badgeCls}">${capitalize(a.status || 'pending')}</span>
@@ -1315,60 +1433,127 @@ function openBookModal() {
 }
 function closeBookModal() {
   document.getElementById('bookModal').classList.remove('open');
+  clearHospitalSelection();
+  ['bookDate','bookTime','bookReason','bookDoctor'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('bookDoctorSection').style.display = 'none';
+  document.getElementById('bookDoctorList').innerHTML = '';
+  document.getElementById('bookSpecLabel').textContent = '';
+  [1, 2, 3].forEach(n => {
+    document.getElementById(`bookStep${n}`).classList.toggle('hidden', n !== 1);
+    const bar = document.getElementById(`step-bar-${n}`);
+    if (bar) bar.style.background = n === 1 ? 'var(--blue)' : 'var(--gray5)';
+  });
+  state.bookStep = 1;
 }
 
 async function loadHospitals() {
   try {
     const data = await apiFetch('/api/patient/hospitals');
     state.hospitals = data || [];
-    const sel = document.getElementById('bookHospital');
-    sel.innerHTML = '<option value="">Select a hospital</option>' +
-      state.hospitals.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
   } catch (e) {
     showToast('Failed to load hospitals: ' + e.message, 'error');
   }
 }
 
-async function onHospitalChange() {
-  const id = document.getElementById('bookHospital').value;
-  const branchSel = document.getElementById('bookBranch');
-  branchSel.innerHTML = '<option value="">Loading branches…</option>';
-  if (!id) return;
-  try {
-    const data = await apiFetch(`/api/patient/hospitals/${id}/branches`);
-    branchSel.innerHTML = '<option value="">Select a branch</option>' +
-      (data || []).map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-  } catch (e) {
-    branchSel.innerHTML = '<option value="">Failed to load branches</option>';
+function filterHospitalResults(query) {
+  const results = document.getElementById('bookHospitalResults');
+  const q = query.trim().toLowerCase();
+  if (!q) { results.style.display = 'none'; return; }
+  const matches = state.hospitals.filter(h => h.name.toLowerCase().includes(q));
+  if (!matches.length) {
+    results.style.display = 'block';
+    results.innerHTML = `<div style="padding:12px 16px;color:var(--gray);font-size:14px;">No hospitals found</div>`;
+    return;
   }
+  results.style.display = 'block';
+  results.innerHTML = matches.map(h => `
+    <div onclick="selectHospital(${h.id}, '${h.name.replace(/'/g,"&#39;")}')"
+      style="padding:10px 16px;cursor:pointer;font-size:14px;color:var(--label);border-bottom:1px solid var(--separator);"
+      onmouseover="this.style.background='var(--gray6)'" onmouseout="this.style.background=''">
+      <div style="font-weight:600;">${h.name}</div>
+      ${h.city ? `<div style="font-size:12px;color:var(--gray);margin-top:1px;">${h.city}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function selectHospital(id, name) {
+  document.getElementById('bookHospital').value = id;
+  document.getElementById('bookHospitalSearch').value = '';
+  document.getElementById('bookHospitalResults').style.display = 'none';
+  document.getElementById('bookHospitalSelectedName').textContent = name;
+  document.getElementById('bookHospitalSelected').style.display = 'block';
+}
+
+function clearHospitalSelection() {
+  document.getElementById('bookHospital').value = '';
+  document.getElementById('bookHospitalSelectedName').textContent = '';
+  document.getElementById('bookHospitalSelected').style.display = 'none';
+  document.getElementById('bookHospitalSearch').value = '';
+  document.getElementById('bookHospitalSearch').focus();
 }
 
 function goBookStep(step) {
+  if (step === 2 && !document.getElementById('bookHospital').value) {
+    showToast('Please select a hospital', 'warning');
+    return;
+  }
+  if (step === 3 && !document.getElementById('bookReason').value.trim()) {
+    showToast('Please describe your reason for visit', 'warning');
+    return;
+  }
   [1, 2, 3].forEach(n => {
     document.getElementById(`bookStep${n}`).classList.toggle('hidden', n !== step);
     const bar = document.getElementById(`step-bar-${n}`);
-    bar.style.background = n <= step ? 'var(--blue)' : 'var(--gray5)';
+    if (bar) bar.style.background = n <= step ? 'var(--blue)' : 'var(--gray5)';
   });
   state.bookStep = step;
+}
 
-  // Validation
-  if (step === 2 && !document.getElementById('bookHospital').value) {
-    showToast('Please select a hospital', 'warning');
-    goBookStep(1); return;
-  }
-  if (step === 3 && !document.getElementById('bookBranch').value) {
-    showToast('Please select a branch', 'warning');
-    goBookStep(2); return;
+async function findDoctors() {
+  const reason = document.getElementById('bookReason').value.trim();
+  if (!reason) { showToast('Please describe your symptoms first', 'warning'); return; }
+  const btn = document.getElementById('bookFindDoctorsBtn');
+  setLoading(btn, true, 'Finding…');
+  try {
+    const { specialization } = await apiFetch('/api/classify-symptom', {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    document.getElementById('bookSpecLabel').textContent = specialization;
+    const doctors = await apiFetch(`/api/doctors?specialization=${encodeURIComponent(specialization)}`);
+    const list = document.getElementById('bookDoctorList');
+    if (!doctors.length) {
+      list.innerHTML = `<div style="color:var(--gray);font-size:13px;padding:8px 0;">No doctors found for this specialization.</div>`;
+    } else {
+      list.innerHTML = doctors.map(d => `
+        <label style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--separator);cursor:pointer;transition:border-color .15s;"
+          onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor=document.getElementById('bookDoctor').value==${d.id}?'var(--blue)':'var(--separator)'">
+          <input type="radio" name="bookDoctorRadio" value="${d.id}" style="accent-color:var(--blue);"
+            onchange="document.getElementById('bookDoctor').value=this.value;document.querySelectorAll('[name=bookDoctorRadio]').forEach(r=>{r.closest('label').style.borderColor=r.checked?'var(--blue)':'var(--separator)'});" />
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:var(--label);">${d.name}</div>
+            <div style="font-size:12px;color:var(--gray);margin-top:2px;">${d.qualification || ''} · ${d.experience_years} yrs exp</div>
+          </div>
+          <div style="font-size:11px;color:var(--blue);font-weight:600;background:var(--blue)0D;padding:3px 8px;border-radius:6px;">${d.specialization}</div>
+        </label>
+      `).join('');
+    }
+    document.getElementById('bookDoctorSection').style.display = 'block';
+  } catch(e) {
+    showToast('Could not classify symptoms: ' + e.message, 'error');
+  } finally {
+    setLoading(btn, false, '<i class="fa-solid fa-magnifying-glass-plus"></i> Find Doctors');
   }
 }
 
 async function submitBooking() {
-  const branchId = document.getElementById('bookBranch').value;
-  const date     = document.getElementById('bookDate').value;
-  const time     = document.getElementById('bookTime').value;
-  const reason   = document.getElementById('bookReason').value;
+  const hospitalId = document.getElementById('bookHospital').value;
+  const date       = document.getElementById('bookDate').value;
+  const time       = document.getElementById('bookTime').value;
+  const reason     = document.getElementById('bookReason').value;
+  const doctorId   = document.getElementById('bookDoctor').value || null;
 
-  if (!branchId || !date || !reason) {
+  if (!hospitalId || !date || !reason) {
     showToast('Please fill all required fields', 'warning');
     return;
   }
@@ -1379,8 +1564,10 @@ async function submitBooking() {
     await apiFetch('/api/patient/appointments/book', {
       method: 'POST',
       body: JSON.stringify({
-        branch_id: branchId,
-        date: time ? `${date}T${time}:00` : date,
+        hospital_id:      parseInt(hospitalId),
+        doctor_id:        doctorId ? parseInt(doctorId) : null,
+        appointment_date: date,
+        appointment_time: time || '09:00',
         reason,
       }),
     });
@@ -1388,8 +1575,6 @@ async function submitBooking() {
     showToast('Appointment booked successfully!', 'success');
     loadAppointments();
     loadDashboard();
-    // Reset form
-    ['bookHospital','bookBranch','bookDate','bookTime','bookReason'].forEach(id => { document.getElementById(id).value = ''; });
   } catch (e) {
     showToast(e.message, 'error');
   } finally {
@@ -1425,7 +1610,7 @@ function timelineItemHTML(r) {
         <div class="timeline-date">${fmtDate(r.date || r.created_at)}</div>
         <div class="timeline-diagnosis">${r.diagnosis || 'Diagnosis not specified'}</div>
         ${r.prescription ? `<div class="timeline-prescription"><i class="fa-solid fa-pills" style="color:var(--orange);font-size:11px;"></i> ${r.prescription}</div>` : ''}
-        ${r.branch_name || r.branch ? `<div class="timeline-branch"><i class="fa-solid fa-hospital"></i> ${r.branch_name || r.branch}</div>` : ''}
+        ${r.hospital_name ? `<div class="timeline-branch"><i class="fa-solid fa-hospital"></i> ${r.hospital_name}</div>` : ''}
       </div>
     </div>`;
 }
@@ -1451,9 +1636,31 @@ function renderChatSessions() {
   }
   el.innerHTML = state.chatSessions.map(s => `
     <div class="chat-session-item ${state.chatSessionId === s.id ? 'active' : ''}" onclick="loadChatSession('${s.id}')">
-      <div class="chat-session-title">${s.title || 'Chat Session'}</div>
-      <div class="chat-session-date">${fmtRelative(s.created_at)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="chat-session-title">${s.title || 'Chat Session'}</div>
+        <div class="chat-session-date">${fmtRelative(s.created_at)}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteChatSession('${s.id}')" title="Delete session"
+        style="background:none;border:none;cursor:pointer;color:var(--gray2);padding:4px 6px;border-radius:6px;flex-shrink:0;opacity:0.6;"
+        onmouseover="this.style.opacity='1';this.style.color='var(--red)'"
+        onmouseout="this.style.opacity='0.6';this.style.color='var(--gray2)'">
+        <i class="fa-solid fa-trash-can" style="font-size:12px;"></i>
+      </button>
     </div>`).join('');
+}
+
+async function deleteChatSession(id) {
+  if (!confirm('Delete this chat session?')) return;
+  try {
+    await apiFetch(`/api/chat/sessions/${id}`, { method: 'DELETE' });
+    if (state.chatSessionId === id) {
+      startNewChatSession();
+    }
+    state.chatSessions = state.chatSessions.filter(s => s.id !== id);
+    renderChatSessions();
+  } catch (e) {
+    showToast('Failed to delete session', 'error');
+  }
 }
 
 async function loadChatSession(id) {
@@ -1506,6 +1713,70 @@ function autoResizeChatInput(el) {
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
+// ── Voice Input ──────────────────────────────
+let _recognition = null;
+let _voiceActive  = false;
+
+function toggleVoiceInput() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Voice input is not supported in this browser. Try Chrome or Edge.', 'error');
+    return;
+  }
+  if (_voiceActive) {
+    _recognition?.stop();
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _recognition = new SpeechRecognition();
+  _recognition.lang          = 'en-US';
+  _recognition.interimResults = true;
+  _recognition.maxAlternatives = 1;
+  _recognition.continuous    = false;
+
+  const btn   = document.getElementById('chatMicBtn');
+  const input = document.getElementById('chatInput');
+  let finalTranscript = input.value;
+
+  _recognition.onstart = () => {
+    _voiceActive = true;
+    btn.classList.add('recording');
+    btn.title = 'Listening… (click to stop)';
+    input.placeholder = 'Listening…';
+  };
+
+  _recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalTranscript += (finalTranscript ? ' ' : '') + t.trim();
+      else interim = t;
+    }
+    input.value = finalTranscript + (interim ? (finalTranscript ? ' ' : '') + interim : '');
+    autoResizeChatInput(input);
+  };
+
+  _recognition.onerror = (e) => {
+    if (e.error !== 'aborted') showToast('Voice error: ' + e.error, 'error');
+    stopVoice();
+  };
+
+  _recognition.onend = () => {
+    stopVoice();
+    if (input.value.trim()) input.focus();
+  };
+
+  _recognition.start();
+}
+
+function stopVoice() {
+  _voiceActive = false;
+  const btn   = document.getElementById('chatMicBtn');
+  const input = document.getElementById('chatInput');
+  btn?.classList.remove('recording');
+  if (btn) btn.title = 'Voice input';
+  if (input) input.placeholder = 'Type a message…';
+}
+
 async function sendChatMessage() {
   const input = document.getElementById('chatInput');
   const text  = input.value.trim();
@@ -1515,9 +1786,12 @@ async function sendChatMessage() {
   input.value = '';
   input.style.height = 'auto';
 
+  const container = document.getElementById('chatMessages');
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+
   // Show typing indicator
   const typingId = 'typing-' + Date.now();
-  const container = document.getElementById('chatMessages');
   container.innerHTML += `
     <div class="chat-message ai" id="${typingId}">
       <div class="chat-avatar-sm" style="background: linear-gradient(135deg, var(--blue), var(--purple));">
@@ -1527,34 +1801,89 @@ async function sendChatMessage() {
     </div>`;
   container.scrollTop = container.scrollHeight;
 
-  const btn = document.getElementById('chatSendBtn');
-  btn.disabled = true;
+  const body = { message: text, mode: state.chatMode };
+  if (state.chatSessionId) body.session_id = state.chatSessionId;
+
+  const token = localStorage.getItem('neurax_token');
 
   try {
-    const body = {
-      message: text,
-      mode: state.chatMode,
-    };
-    if (state.chatSessionId) body.session_id = state.chatSessionId;
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body)
+    });
 
-    const data = await apiFetch('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+    if (!resp.ok) throw new Error('Server error ' + resp.status);
 
-    // Remove typing indicator
+    // Remove typing indicator and create streaming bubble
     const typingEl = document.getElementById(typingId);
     if (typingEl) typingEl.remove();
 
-    const reply = data.response || data.message || data.reply || 'I understand. How can I assist you further?';
-    if (data.session_id && !state.chatSessionId) {
-      state.chatSessionId = data.session_id;
-      document.getElementById('chatSessionLabel').textContent = data.title || 'Session';
-      loadChatSessions();
+    const msgId = 'ai-msg-' + Date.now();
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    container.innerHTML += `
+      <div class="chat-message ai" id="${msgId}">
+        <div class="chat-avatar-sm" style="background: linear-gradient(135deg, var(--blue), var(--purple));">
+          <i class="fa-solid fa-robot" style="font-size:10px;"></i>
+        </div>
+        <div>
+          <div class="chat-bubble" id="${msgId}-bubble"></div>
+          <div class="chat-time">${timeStr}</div>
+        </div>
+      </div>`;
+    container.scrollTop = container.scrollHeight;
+
+    const bubble = document.getElementById(msgId + '-bubble');
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE lines: "data: {...}\n\n"
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const raw = line.slice(5).trim();
+        if (!raw) continue;
+        try {
+          const evt = JSON.parse(raw);
+          if (evt.error) {
+            bubble.textContent = 'Sorry, I encountered an error. Please try again.';
+            break;
+          }
+          if (evt.token) {
+            fullText += evt.token;
+            bubble.innerHTML = escapeHTML(fullText) + '<span class="chat-cursor">▍</span>';
+            container.scrollTop = container.scrollHeight;
+            await new Promise(r => setTimeout(r, 55)); // ~55 tokens/sec — increase to slow down
+          }
+          if (evt.done) {
+            bubble.innerHTML = escapeHTML(fullText);
+            if (evt.session_id && !state.chatSessionId) {
+              state.chatSessionId = evt.session_id;
+              document.getElementById('chatSessionLabel').textContent = 'Session';
+              loadChatSessions();
+            }
+          }
+        } catch (_) {}
+      }
     }
-    appendChatMessage('ai', reply);
+
+    // Ensure cursor removed on stream end
+    bubble.innerHTML = escapeHTML(fullText || 'I understand. How can I assist you further?');
+
   } catch (e) {
     const typingEl = document.getElementById(typingId);
     if (typingEl) typingEl.remove();
     appendChatMessage('ai', 'Sorry, I encountered an error. Please try again.');
-    showToast(e.message, 'error');
+    showToast(e.message || 'Connection error', 'error');
   } finally {
     btn.disabled = false;
   }
@@ -1621,7 +1950,7 @@ function renderNotifications() {
     const ic   = iconMap[type] || iconMap.system;
     const isUnread = !n.is_read && !n.read;
     return `
-      <div class="notif-item ${isUnread ? 'unread' : ''}" onclick="markNotifRead('${n.id}', this)">
+      <div class="notif-item ${isUnread ? 'unread' : ''}" id="notif-${n.id}" onclick="markNotifRead('${n.id}', this)">
         <div class="notif-icon" style="background:${ic.bg}; color:var(--${ic.cls});">
           <i class="fa-solid ${ic.icon}"></i>
         </div>
@@ -1631,6 +1960,12 @@ function renderNotifications() {
           <div class="notif-time">${fmtRelative(n.created_at)}</div>
         </div>
         ${isUnread ? '<div class="notif-unread-dot"></div>' : ''}
+        <button onclick="event.stopPropagation();deleteNotification(${n.id})" title="Delete"
+          style="background:none;border:none;cursor:pointer;color:var(--gray2);padding:6px 8px;border-radius:6px;flex-shrink:0;opacity:0.5;margin-left:4px;"
+          onmouseover="this.style.opacity='1';this.style.color='var(--red)'"
+          onmouseout="this.style.opacity='0.5';this.style.color='var(--gray2)'">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>`;
   }).join('');
 }
@@ -1655,6 +1990,31 @@ async function markAllRead() {
   renderNotifications();
   updateNotifBadge();
   showToast('All notifications marked as read', 'success');
+}
+
+async function deleteNotification(id) {
+  try {
+    await apiFetch(`/api/patient/notifications/${id}`, { method: 'DELETE' });
+    state.notifications = state.notifications.filter(n => n.id != id);
+    renderNotifications();
+    updateNotifBadge();
+  } catch (e) {
+    showToast('Failed to delete notification', 'error');
+  }
+}
+
+async function clearAllNotifications() {
+  if (!state.notifications.length) return;
+  if (!confirm('Clear all notifications?')) return;
+  try {
+    await apiFetch('/api/patient/notifications', { method: 'DELETE' });
+    state.notifications = [];
+    renderNotifications();
+    updateNotifBadge();
+    showToast('All notifications cleared', 'success');
+  } catch (e) {
+    showToast('Failed to clear notifications', 'error');
+  }
 }
 
 function updateNotifBadge() {
@@ -1714,6 +2074,15 @@ function emptyState(icon, title, sub) {
   await loadProfile();
   loadDashboard();
 
+  // Close hospital search dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('bookHospitalResults');
+    const input = document.getElementById('bookHospitalSearch');
+    if (wrap && input && !input.contains(e.target) && !wrap.contains(e.target)) {
+      wrap.style.display = 'none';
+    }
+  });
+
   // Load notifications count in background
   try {
     const notifs = await apiFetch('/api/patient/notifications');
@@ -1721,6 +2090,181 @@ function emptyState(icon, title, sub) {
     updateNotifBadge();
   } catch {}
 })();
+
+// ─────────────────────────────────────────────
+// Hospitals Near Me  (Google Maps + Places New API)
+// ─────────────────────────────────────────────
+let _nearbyMap     = null;
+let _nearbyMarkers = [];
+
+function loadHospitalsNearby() {
+  const subtitle = document.getElementById('nearbySubtitle');
+  const list     = document.getElementById('nearbyList');
+  subtitle.textContent = 'Detecting your location…';
+  list.innerHTML = '<div class="page-loader"><div class="spinner"></div></div>';
+
+  if (!navigator.geolocation) {
+    subtitle.textContent = 'Geolocation not supported by your browser.';
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-location-slash"></i><p>Not supported</p></div>';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => _initNearbyMap(pos.coords.latitude, pos.coords.longitude),
+    () => {
+      subtitle.textContent = 'Location access denied.';
+      list.innerHTML = `<div class="card" style="text-align:center; padding:32px; color:var(--gray);">
+        <i class="fa-solid fa-location-slash" style="font-size:36px; margin-bottom:12px; display:block;"></i>
+        <div style="font-weight:600; margin-bottom:6px;">Location Access Required</div>
+        <div style="font-size:13px;">Please allow location access in your browser and try again.</div>
+      </div>`;
+    },
+    { timeout: 10000 }
+  );
+}
+
+async function _initNearbyMap(lat, lng) {
+  const subtitle = document.getElementById('nearbySubtitle');
+  const mapDiv   = document.getElementById('nearbyMap');
+  const center   = { lat, lng };
+
+  // Wait for Maps script to finish loading if called before it's ready
+  if (typeof google === 'undefined' || !google.maps || !google.maps.Map) {
+    await new Promise(resolve => { window._mapsReady = resolve; });
+  }
+
+  try {
+    // Use classes from pre-loaded libraries (maps, marker, places loaded via script tag)
+    const Map                  = google.maps.Map;
+    const InfoWindow           = google.maps.InfoWindow;
+    const AdvancedMarkerElement = google.maps.marker.AdvancedMarkerElement;
+    const PinElement           = google.maps.marker.PinElement;
+    const Place                = google.maps.places.Place;
+    const SearchNearbyRankPreference = google.maps.places.SearchNearbyRankPreference;
+
+    // Create or reuse map (mapId required for AdvancedMarkerElement)
+    if (!_nearbyMap) {
+      _nearbyMap = new Map(mapDiv, {
+        center, zoom: 14,
+        mapId: 'neurax_nearby',
+        mapTypeControl: false, streetViewControl: false, fullscreenControl: false
+      });
+    } else {
+      _nearbyMap.setCenter(center);
+    }
+
+    // "You are here" pin (blue dot)
+    const youPin = new PinElement({ background: '#007AFF', borderColor: '#fff', glyphColor: '#fff', scale: 0.9 });
+    new AdvancedMarkerElement({ map: _nearbyMap, position: center, title: 'You are here', content: youPin.element });
+
+    // Clear old markers
+    _nearbyMarkers.forEach(m => { m.map = null; });
+    _nearbyMarkers = [];
+
+    subtitle.textContent = 'Searching for hospitals…';
+
+    // New Places API — searchNearby
+    const { places } = await Place.searchNearby({
+      fields: ['displayName', 'location', 'formattedAddress', 'rating',
+               'userRatingCount', 'regularOpeningHours', 'id', 'nationalPhoneNumber'],
+      locationRestriction: { center, radius: 5000 },
+      includedPrimaryTypes: ['hospital'],
+      maxResultCount: 20,
+      rankPreference: SearchNearbyRankPreference.DISTANCE
+    });
+
+    if (!places || !places.length) {
+      subtitle.textContent = 'No hospitals found nearby.';
+      list.innerHTML = '<div class="card" style="padding:24px; text-align:center; color:var(--gray);">No hospitals found within 5 km.</div>';
+      return;
+    }
+
+    subtitle.textContent = `${places.length} hospital${places.length > 1 ? 's' : ''} found nearby`;
+
+    const infoWindow = new InfoWindow();
+    const bounds = new google.maps.LatLngBounds();
+    bounds.extend(center);
+
+    places.forEach((place, i) => {
+      bounds.extend(place.location);
+
+      // Red numbered pin
+      const pin = new PinElement({
+        background: '#FF3B30', borderColor: '#CC0000', glyphColor: '#fff',
+        glyph: String(i + 1), scale: 1.1
+      });
+      const marker = new AdvancedMarkerElement({
+        map: _nearbyMap, position: place.location,
+        title: place.displayName, content: pin.element
+      });
+      _nearbyMarkers.push(marker);
+
+      marker.addListener('click', () => {
+        infoWindow.setContent(`<div style="font-family:Inter,sans-serif; padding:4px 2px; max-width:220px;">
+          <div style="font-weight:700; font-size:14px;">${place.displayName}</div>
+          <div style="font-size:12px; color:#666; margin-top:2px;">${place.formattedAddress || ''}</div>
+          ${place.rating ? `<div style="font-size:12px; margin-top:4px;">⭐ ${place.rating} (${place.userRatingCount || 0} reviews)</div>` : ''}
+          ${place.nationalPhoneNumber ? `<div style="font-size:12px; margin-top:4px;">📞 ${place.nationalPhoneNumber}</div>` : ''}
+        </div>`);
+        infoWindow.open(_nearbyMap, marker);
+      });
+    });
+
+    _nearbyMap.fitBounds(bounds);
+
+    // Render result cards
+    const list = document.getElementById('nearbyList');
+    list.innerHTML = places.map((place, i) => {
+      const dist = _haversine(lat, lng, place.location.lat(), place.location.lng());
+      const isOpen = place.regularOpeningHours?.isOpen?.();
+      const openLabel = isOpen === true ? 'Open Now' : isOpen === false ? 'Closed' : '';
+      const openColor = openLabel === 'Open Now' ? 'var(--green)' : openLabel ? 'var(--red)' : 'var(--gray)';
+      const mapsUrl  = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place.displayName)}&destination_place_id=${place.id}`;
+      return `
+        <div class="card" style="margin-bottom:12px; cursor:pointer;" onclick="_nearbyMarkers[${i}].element.click()">
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="min-width:36px; height:36px; border-radius:50%; background:var(--red);
+                 display:flex; align-items:center; justify-content:center; color:#fff;
+                 font-weight:700; font-size:14px; flex-shrink:0;">${i + 1}</div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:600; font-size:15px; margin-bottom:3px;">${place.displayName}</div>
+              <div style="font-size:13px; color:var(--gray2); margin-bottom:6px;">${place.formattedAddress || ''}</div>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                ${place.rating ? `<span class="badge badge-blue">⭐ ${place.rating}</span>` : ''}
+                ${openLabel ? `<span style="font-size:12px; font-weight:600; color:${openColor};">${openLabel}</span>` : ''}
+                <span style="font-size:12px; color:var(--gray);">${dist} km away</span>
+              </div>
+            </div>
+            <a href="${mapsUrl}" target="_blank" onclick="event.stopPropagation()"
+               style="flex-shrink:0; padding:8px 14px; background:var(--blue); color:#fff;
+                      border-radius:10px; font-size:13px; font-weight:600; text-decoration:none;
+                      display:flex; align-items:center; gap:5px;">
+              <i class="fa-solid fa-diamond-turn-right"></i> Directions
+            </a>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch (err) {
+    console.error('[NearbyMap]', err);
+    subtitle.textContent = 'Failed to load map.';
+    document.getElementById('nearbyList').innerHTML =
+      `<div class="card" style="padding:20px; color:var(--red); text-align:center;">
+        ${err.message || 'Google Maps failed to load. Check that Maps JavaScript API and Places API (New) are enabled in Google Cloud Console.'}
+      </div>`;
+  }
+}
+
+function _haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1);
+}
 </script>
+<!-- Google Maps + Places + Marker libraries -->
+<script>function _mapsReady() { if (window._mapsReady) window._mapsReady(); }</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_places_key }}&libraries=maps,marker,places&v=weekly&callback=_mapsReady" async defer></script>
 </body>
 </html>

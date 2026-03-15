@@ -326,47 +326,7 @@
     }
     .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.1); }
 
-    /* ── PENDING HOSPITAL CARD ──────────────────────────────── */
-    .pending-list { padding: 8px 16px 16px; }
-    .pending-card {
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      display: flex; align-items: center; gap: 14px;
-      margin-top: 10px;
-      background: var(--card);
-      transition: box-shadow var(--trans);
-    }
-    .pending-card:hover { box-shadow: var(--shadow); }
-    .pending-avatar {
-      width: 42px; height: 42px; border-radius: 10px;
-      background: rgba(0,122,255,.1);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--blue); font-size: 18px; flex-shrink: 0;
-    }
-    .pending-info { flex: 1; min-width: 0; }
-    .pending-name  { font-size: 14px; font-weight: 600; }
-    .pending-meta  { font-size: 12px; color: var(--label); margin-top: 2px; }
-    .pending-actions { display: flex; gap: 8px; }
 
-    /* ── EXPANDED ROW ───────────────────────────────────────── */
-    tr.branch-row td {
-      padding: 0;
-      background: rgba(0,122,255,.03);
-    }
-    .branch-inner {
-      padding: 12px 22px 14px 46px;
-      border-top: 1px dashed var(--border);
-    }
-    .branch-inner h5 { font-size: 12px; font-weight: 700; color: var(--label); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-    .branch-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .branch-pill {
-      padding: 5px 12px; border-radius: 20px;
-      background: var(--bg); border: 1px solid var(--border);
-      font-size: 12px; font-weight: 500; color: var(--text2);
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .branch-pill i { color: var(--blue); font-size: 11px; }
 
     /* ── REFRESH BAR ────────────────────────────────────────── */
     .refresh-bar {
@@ -500,7 +460,6 @@
       <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
         <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
         Dashboard
-        <span class="nav-badge" id="pending-badge" style="display:none">0</span>
       </div>
 
       <div class="nav-section-label" style="margin-top:8px;">Management</div>
@@ -550,20 +509,8 @@
           <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
           <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
           <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
-          <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
-          <div class="stat-card"><div class="spinner-wrap" style="padding:24px"><div class="spinner"></div></div></div>
         </div>
 
-        <div class="section" id="pending-section">
-          <div class="section-header">
-            <i class="fa-solid fa-clock text-orange"></i>
-            <h3>Pending Approvals</h3>
-            <span class="section-meta" id="pending-count-label">Loading…</span>
-          </div>
-          <div class="pending-list" id="pending-list">
-            <div class="spinner-wrap"><div class="spinner"></div><span>Loading hospitals…</span></div>
-          </div>
-        </div>
 
       </div>
     </div>
@@ -581,10 +528,6 @@
       <div class="page-body">
         <div class="section">
           <div class="filter-bar">
-            <button class="filter-btn active" data-filter="all"       onclick="setHospitalFilter('all',this)">All</button>
-            <button class="filter-btn"         data-filter="pending"  onclick="setHospitalFilter('pending',this)">Pending</button>
-            <button class="filter-btn"         data-filter="approved" onclick="setHospitalFilter('approved',this)">Approved</button>
-            <button class="filter-btn"         data-filter="rejected" onclick="setHospitalFilter('rejected',this)">Rejected</button>
             <div class="filter-spacer"></div>
             <input type="search" class="search-input" id="hospital-search" placeholder="&#xf002;  Search hospitals…" oninput="renderHospitalsTable()" />
           </div>
@@ -592,18 +535,16 @@
             <table id="hospitals-table">
               <thead>
                 <tr>
-                  <th></th>
                   <th>Hospital Name</th>
                   <th>Type</th>
                   <th>Code</th>
-                  <th>Branches</th>
-                  <th>Status</th>
+                  <th>City</th>
+                  <th>Phone</th>
                   <th>Registered</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="hospitals-tbody">
-                <tr><td colspan="8"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></td></tr>
+                <tr><td colspan="6"><div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -668,8 +609,6 @@
     token: null,
     currentPage: 'dashboard',
     hospitals: [],
-    hospitalFilter: 'all',
-    expandedRows: new Set(),
     auditTimer: null,
     auditCountdown: 30,
     auditCountdownTimer: null,
@@ -786,12 +725,11 @@
   ══════════════════════════════════════════════════════════════ */
   async function loadDashboard() {
     loadStats();
-    loadPendingHospitals();
   }
 
   async function loadStats() {
     const grid = document.getElementById('stats-grid');
-    grid.innerHTML = [1,2,3,4,5].map(() => `
+    grid.innerHTML = [1,2,3].map(() => `
       <div class="stat-card">
         <div class="skeleton" style="width:40px;height:40px;border-radius:10px;"></div>
         <div class="skeleton" style="width:70px;height:28px;border-radius:6px;margin-top:4px;"></div>
@@ -806,20 +744,12 @@
 
       const cfg = [
         { key: 'total_hospitals',    label: 'Total Hospitals',    icon: 'fa-hospital',        color: '#007AFF' },
-        { key: 'pending_approvals',  label: 'Pending Approvals',  icon: 'fa-clock',           color: '#FF9500' },
-        { key: 'total_branches',     label: 'Total Branches',     icon: 'fa-code-branch',     color: '#34C759' },
         { key: 'total_patients',     label: 'Total Patients',     icon: 'fa-user-injured',    color: '#AF52DE' },
         { key: 'total_appointments', label: 'Appointments',       icon: 'fa-calendar-check',  color: '#FF3B30' },
       ];
 
       grid.innerHTML = cfg.map(c => {
         const val = data[c.key] ?? 0;
-        // update pending badge
-        if (c.key === 'pending_approvals') {
-          const badge = document.getElementById('pending-badge');
-          badge.textContent = val;
-          badge.style.display = val > 0 ? '' : 'none';
-        }
         return `
           <div class="stat-card">
             <div class="stat-icon" style="background:${c.color}">
@@ -838,75 +768,13 @@
     }
   }
 
-  async function loadPendingHospitals() {
-    const list  = document.getElementById('pending-list');
-    const label = document.getElementById('pending-count-label');
-    list.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><span>Loading…</span></div>';
-    label.textContent = 'Loading…';
-
-    try {
-      const res  = await apiFetch('/api/admin/hospitals');
-      if (res.status === 401) { logout(); return; }
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to load hospitals.');
-
-      const hospitals = Array.isArray(data) ? data : (data.hospitals || data.data || []);
-      const pending   = hospitals.filter(h => (h.status || '').toLowerCase() === 'pending');
-
-      label.textContent = `${pending.length} awaiting review`;
-
-      if (pending.length === 0) {
-        list.innerHTML = `<div class="empty-state">
-          <i class="fa-solid fa-circle-check empty-icon text-green"></i>
-          <h4>All caught up!</h4>
-          <p>No hospitals are currently awaiting approval.</p>
-        </div>`;
-        return;
-      }
-
-      list.innerHTML = pending.map(h => buildPendingCard(h)).join('');
-    } catch (err) {
-      list.innerHTML = `<div class="empty-state">
-        <i class="fa-solid fa-triangle-exclamation empty-icon text-orange"></i>
-        <h4>Error loading hospitals</h4><p>${err.message}</p>
-        <button class="btn btn-ghost btn-sm" onclick="loadPendingHospitals()">Retry</button>
-      </div>`;
-      label.textContent = 'Error';
-    }
-  }
-
-  function buildPendingCard(h) {
-    return `<div class="pending-card" id="pending-card-${h.id}">
-      <div class="pending-avatar"><i class="fa-solid fa-hospital"></i></div>
-      <div class="pending-info">
-        <div class="pending-name">${esc(h.name || h.hospital_name)}</div>
-        <div class="pending-meta">
-          <i class="fa-solid fa-tag" style="margin-right:3px"></i>${esc(h.type || '—')}
-          &nbsp;·&nbsp;
-          <i class="fa-solid fa-code" style="margin-right:3px"></i>${esc(h.code || '—')}
-          &nbsp;·&nbsp;
-          <i class="fa-solid fa-calendar" style="margin-right:3px"></i>${formatDate(h.created_at || h.registered_at)}
-        </div>
-      </div>
-      <div class="pending-actions">
-        <button class="btn btn-success btn-sm" onclick="hospitalAction(${h.id},'approve','pending-card-${h.id}')">
-          <i class="fa-solid fa-check"></i> Approve
-        </button>
-        <button class="btn btn-danger btn-sm" onclick="hospitalAction(${h.id},'reject','pending-card-${h.id}')">
-          <i class="fa-solid fa-xmark"></i> Reject
-        </button>
-      </div>
-    </div>`;
-  }
-
   /* ══════════════════════════════════════════════════════════════
      HOSPITALS
   ══════════════════════════════════════════════════════════════ */
   async function loadHospitals() {
     const tbody = document.getElementById('hospitals-tbody');
-    tbody.innerHTML = `<tr><td colspan="8"><div class="spinner-wrap"><div class="spinner"></div><span>Loading hospitals…</span></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="spinner-wrap"><div class="spinner"></div><span>Loading hospitals…</span></div></td></tr>`;
     STATE.hospitals = [];
-    STATE.expandedRows.clear();
 
     try {
       const res  = await apiFetch('/api/admin/hospitals');
@@ -917,7 +785,7 @@
       STATE.hospitals = Array.isArray(data) ? data : (data.hospitals || data.data || []);
       renderHospitalsTable();
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
         <i class="fa-solid fa-triangle-exclamation empty-icon text-orange"></i>
         <h4>Could not load hospitals</h4><p>${err.message}</p>
         <button class="btn btn-ghost btn-sm" onclick="loadHospitals()">Retry</button>
@@ -925,157 +793,47 @@
     }
   }
 
-  function setHospitalFilter(filter, btn) {
-    STATE.hospitalFilter = filter;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    STATE.expandedRows.clear();
-    renderHospitalsTable();
-  }
-
   function renderHospitalsTable() {
     const tbody  = document.getElementById('hospitals-tbody');
     const search = (document.getElementById('hospital-search')?.value || '').toLowerCase();
-    const filter = STATE.hospitalFilter;
 
     let rows = STATE.hospitals.filter(h => {
-      const status = (h.status || '').toLowerCase();
-      const fOk = filter === 'all' || status === filter;
-      if (!fOk) return false;
       if (!search) return true;
       const name = (h.name || h.hospital_name || '').toLowerCase();
       const code = (h.code || '').toLowerCase();
       const type = (h.type || '').toLowerCase();
-      return name.includes(search) || code.includes(search) || type.includes(search);
+      const city = (h.city || '').toLowerCase();
+      return name.includes(search) || code.includes(search) || type.includes(search) || city.includes(search);
     });
 
     if (rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
         <i class="fa-solid fa-hospital empty-icon"></i>
         <h4>No hospitals found</h4>
-        <p>Try a different filter or search term.</p>
+        <p>Try a different search term.</p>
       </div></td></tr>`;
       return;
     }
 
-    tbody.innerHTML = rows.flatMap(h => buildHospitalRow(h)).join('');
+    tbody.innerHTML = rows.map(h => buildHospitalRow(h)).join('');
   }
 
   function buildHospitalRow(h) {
-    const id      = h.id;
-    const name    = esc(h.name || h.hospital_name || '—');
-    const type    = esc(h.type || '—');
-    const code    = esc(h.code || '—');
-    const status  = (h.status || 'unknown').toLowerCase();
-    const branches = Array.isArray(h.branches) ? h.branches : [];
-    const branchCount = h.branch_count ?? branches.length;
-    const isExpanded  = STATE.expandedRows.has(id);
-    const statusBadge = buildStatusBadge(status);
-    const actionBtns  = buildActionBtns(h);
+    const name = esc(h.name || h.hospital_name || '—');
+    const type = esc(h.type || '—');
+    const code = esc(h.code || '—');
+    const city = esc(h.city || '—');
+    const phone = esc(h.phone || '—');
 
-    const mainRow = `
-      <tr class="expandable" onclick="toggleBranches(${id})" id="hrow-${id}">
-        <td style="width:32px;color:var(--label);font-size:13px;">
-          <i class="fa-solid fa-chevron-${isExpanded ? 'down' : 'right'}" id="hchev-${id}"></i>
-        </td>
+    return `
+      <tr>
         <td><span class="fw-700">${name}</span></td>
         <td class="td-muted">${type}</td>
         <td><span class="badge badge-gray" style="font-family:monospace">${code}</span></td>
-        <td><span class="badge badge-blue"><i class="fa-solid fa-code-branch"></i> ${branchCount}</span></td>
-        <td>${statusBadge}</td>
+        <td class="td-muted">${city}</td>
+        <td class="td-muted">${phone}</td>
         <td class="td-muted">${formatDate(h.created_at || h.registered_at)}</td>
-        <td onclick="event.stopPropagation()">${actionBtns}</td>
       </tr>`;
-
-    const branchRow = isExpanded ? `
-      <tr class="branch-row" id="branches-${id}">
-        <td colspan="8">
-          <div class="branch-inner">
-            <h5><i class="fa-solid fa-code-branch" style="margin-right:5px"></i>Branches (${branches.length})</h5>
-            ${branches.length > 0
-              ? `<div class="branch-pills">${branches.map(b =>
-                  `<span class="branch-pill"><i class="fa-solid fa-location-dot"></i>${esc(b.name || b.branch_name || b)}</span>`
-                ).join('')}</div>`
-              : `<p style="font-size:13px;color:var(--label)">No branch data available.</p>`
-            }
-          </div>
-        </td>
-      </tr>` : '';
-
-    return [mainRow, branchRow].filter(Boolean);
-  }
-
-  function buildStatusBadge(status) {
-    const map = {
-      approved: `<span class="badge badge-green"><span class="badge-dot" style="background:var(--green)"></span>Approved</span>`,
-      pending:  `<span class="badge badge-orange"><span class="badge-dot" style="background:var(--orange)"></span>Pending</span>`,
-      rejected: `<span class="badge badge-red"><span class="badge-dot" style="background:var(--red)"></span>Rejected</span>`,
-    };
-    return map[status] || `<span class="badge badge-gray">${esc(status)}</span>`;
-  }
-
-  function buildActionBtns(h) {
-    const status = (h.status || '').toLowerCase();
-    if (status === 'pending') {
-      return `
-        <div class="gap-row">
-          <button class="btn btn-success btn-sm" onclick="hospitalAction(${h.id},'approve')">
-            <i class="fa-solid fa-check"></i> Approve
-          </button>
-          <button class="btn btn-danger btn-sm" onclick="hospitalAction(${h.id},'reject')">
-            <i class="fa-solid fa-xmark"></i> Reject
-          </button>
-        </div>`;
-    }
-    if (status === 'approved') {
-      return `<button class="btn btn-danger btn-sm" onclick="hospitalAction(${h.id},'reject')">
-        <i class="fa-solid fa-ban"></i> Revoke
-      </button>`;
-    }
-    if (status === 'rejected') {
-      return `<button class="btn btn-success btn-sm" onclick="hospitalAction(${h.id},'approve')">
-        <i class="fa-solid fa-rotate-left"></i> Re-approve
-      </button>`;
-    }
-    return '—';
-  }
-
-  function toggleBranches(id) {
-    if (STATE.expandedRows.has(id)) STATE.expandedRows.delete(id);
-    else STATE.expandedRows.add(id);
-    renderHospitalsTable();
-  }
-
-  async function hospitalAction(id, action, cardId = null) {
-    const label = action === 'approve' ? 'Approving…' : 'Rejecting…';
-    // Disable buttons in card if cardId given
-    if (cardId) {
-      const card = document.getElementById(cardId);
-      if (card) card.querySelectorAll('button').forEach(b => { b.disabled = true; });
-    }
-
-    try {
-      const res  = await apiFetch(`/api/admin/hospitals/${id}/approve`, {
-        method: 'PUT', body: { action }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.detail || 'Action failed.');
-
-      const msg = action === 'approve' ? 'Hospital approved successfully.' : 'Hospital rejected.';
-      showToast(msg, action === 'approve' ? 'success' : 'info');
-
-      // Refresh both
-      loadPendingHospitals();
-      loadStats();
-      if (STATE.currentPage === 'hospitals') loadHospitals();
-
-    } catch (err) {
-      showToast(err.message, 'error');
-      if (cardId) {
-        const card = document.getElementById(cardId);
-        if (card) card.querySelectorAll('button').forEach(b => { b.disabled = false; });
-      }
-    }
   }
 
   /* ══════════════════════════════════════════════════════════════
