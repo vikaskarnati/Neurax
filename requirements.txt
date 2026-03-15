@@ -1,0 +1,11 @@
+Flask==2.3.3
+flask-cors==3.0.10
+flask-jwt-extended==4.6.0
+google-genai==1.10.0
+mysql-connector-python==8.3.0
+geopy==2.3.0
+requests==2.31.0
+python-dotenv==1.0.0
+reportlab==4.1.0
+pyotp==2.9.0
+Werkzeug==2.3.7
