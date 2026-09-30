@@ -1,45 +1,49 @@
 """
-Database management module.
-Handles MySQL database connections, initializes tables on startup, and provides role-based access control (RBAC) decorators for routes.
+Database management module for PostgreSQL.
+Handles PostgreSQL database connections, initializes tables on startup, and provides role-based access control (RBAC) decorators for routes.
 """
-import mysql.connector
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from config import Config
 from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 
+class DBConnection:
+    """Wrapper around psycopg2 connection to maintain compatibility with cursor(dictionary=True)."""
+    def __init__(self, raw_conn):
+        self._conn = raw_conn
+        self._conn.autocommit = True
+
+    def cursor(self, *args, dictionary=False, **kwargs):
+        if dictionary or kwargs.pop('dictionary', False):
+            return self._conn.cursor(cursor_factory=RealDictCursor)
+        return self._conn.cursor(*args, **kwargs)
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        return self._conn.close()
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
 def get_db():
-    return mysql.connector.connect(**Config.get_db_config())
+    raw_conn = psycopg2.connect(Config.get_database_url())
+    return DBConnection(raw_conn)
 
 def create_tables():
-    db_config = Config.get_db_config()
-    db_name = db_config.get('database', 'neurax_db')
-    try:
-        conn = get_db()
-    except mysql.connector.Error as err:
-        if getattr(err, 'errno', None) == 1049:
-            # Database does not exist yet; connect without specifying db and create it
-            try:
-                temp_cfg = {k: v for k, v in db_config.items() if k != 'database'}
-                admin_conn = mysql.connector.connect(**temp_cfg)
-                admin_c = admin_conn.cursor()
-                admin_c.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` DEFAULT CHARACTER SET utf8mb4")
-                admin_conn.commit()
-                admin_conn.close()
-                conn = get_db()
-            except Exception as create_err:
-                print(f"[DB ERROR] Could not automatically create database '{db_name}': {create_err}")
-                raise err
-        else:
-            raise err
-
+    conn = get_db()
     c = conn.cursor(dictionary=True)
-
 
     # Hospitals
     c.execute("""
         CREATE TABLE IF NOT EXISTS hospitals (
-            id                  INT AUTO_INCREMENT PRIMARY KEY,
+            id                  SERIAL PRIMARY KEY,
             name                VARCHAR(200) NOT NULL,
             type                VARCHAR(100),
             registration_number VARCHAR(100),
@@ -51,13 +55,13 @@ def create_tables():
             email               VARCHAR(150) UNIQUE NOT NULL,
             password_hash       VARCHAR(255) NOT NULL,
             created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     """)
 
     # Patients
     c.execute("""
         CREATE TABLE IF NOT EXISTS patients (
-            id                      INT AUTO_INCREMENT PRIMARY KEY,
+            id                      SERIAL PRIMARY KEY,
             patient_uid             VARCHAR(20) UNIQUE NOT NULL,
             first_name              VARCHAR(100) NOT NULL,
             last_name               VARCHAR(100) NOT NULL,
@@ -65,31 +69,32 @@ def create_tables():
             password_hash           VARCHAR(255) NOT NULL,
             phone                   VARCHAR(20),
             dob                     DATE,
-            gender                  ENUM('male','female','other'),
+            gender                  VARCHAR(20),
             blood_group             VARCHAR(5),
             emergency_contact_name  VARCHAR(100),
             emergency_contact_phone VARCHAR(20),
             address                 TEXT,
             created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     """)
 
     # Doctors
     c.execute("""
         CREATE TABLE IF NOT EXISTS doctors (
-            id               INT AUTO_INCREMENT PRIMARY KEY,
+            id               SERIAL PRIMARY KEY,
             name             VARCHAR(150) NOT NULL,
             specialization   VARCHAR(100) NOT NULL,
             qualification    VARCHAR(200),
             experience_years INT DEFAULT 0,
             is_active        BOOLEAN DEFAULT TRUE,
             created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     """)
 
     # Seed doctors if table is empty
     c.execute("SELECT COUNT(*) as cnt FROM doctors")
-    if c.fetchone()['cnt'] == 0:
+    row = c.fetchone()
+    if row['cnt'] == 0:
         doctors_seed = [
             ('Dr. Arjun Sharma',       'General Medicine',   'MBBS, MD',          12),
             ('Dr. Priya Menon',        'General Medicine',   'MBBS, DNB',          8),
@@ -120,117 +125,103 @@ def create_tables():
     # Appointments
     c.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
-            id                  INT AUTO_INCREMENT PRIMARY KEY,
-            patient_id          INT NOT NULL,
-            hospital_id         INT NOT NULL,
-            doctor_id           INT,
+            id                  SERIAL PRIMARY KEY,
+            patient_id          INT NOT NULL REFERENCES patients(id),
+            hospital_id         INT NOT NULL REFERENCES hospitals(id),
+            doctor_id           INT REFERENCES doctors(id),
             appointment_date    DATE NOT NULL,
             appointment_time    VARCHAR(10) NOT NULL,
             reason              TEXT,
-            status              ENUM('pending','confirmed','completed','cancelled') DEFAULT 'pending',
+            status              VARCHAR(20) DEFAULT 'pending',
             confirmation_number VARCHAR(20) UNIQUE NOT NULL,
             notes               TEXT,
-            created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id)  REFERENCES patients(id),
-            FOREIGN KEY (hospital_id) REFERENCES hospitals(id),
-            FOREIGN KEY (doctor_id)   REFERENCES doctors(id)
-        )
+            created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
-    try:
-        c.execute("ALTER TABLE appointments ADD COLUMN doctor_id INT, ADD FOREIGN KEY (doctor_id) REFERENCES doctors(id)")
-    except Exception:
-        pass
 
     # Medical Records
     c.execute("""
         CREATE TABLE IF NOT EXISTS medical_records (
-            id             INT AUTO_INCREMENT PRIMARY KEY,
-            appointment_id INT NOT NULL,
-            hospital_id    INT NOT NULL,
-            patient_id     INT NOT NULL,
+            id             SERIAL PRIMARY KEY,
+            appointment_id INT NOT NULL REFERENCES appointments(id),
+            hospital_id    INT NOT NULL REFERENCES hospitals(id),
+            patient_id     INT NOT NULL REFERENCES patients(id),
             diagnosis      TEXT,
             prescription   TEXT,
             notes          TEXT,
             vitals         JSON,
             created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (appointment_id) REFERENCES appointments(id),
-            FOREIGN KEY (patient_id)     REFERENCES patients(id),
-            FOREIGN KEY (hospital_id)    REFERENCES hospitals(id)
-        )
+            updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
 
     # Cross Hospital Access
     c.execute("""
         CREATE TABLE IF NOT EXISTS cross_hospital_access (
-            id                    INT AUTO_INCREMENT PRIMARY KEY,
-            requesting_hospital_id INT NOT NULL,
-            granting_hospital_id   INT NOT NULL,
-            status                 ENUM('pending','granted','revoked') DEFAULT 'pending',
+            id                    SERIAL PRIMARY KEY,
+            requesting_hospital_id INT NOT NULL REFERENCES hospitals(id),
+            granting_hospital_id   INT NOT NULL REFERENCES hospitals(id),
+            status                 VARCHAR(20) DEFAULT 'pending',
             requested_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             granted_at             TIMESTAMP NULL,
-            revoked_at             TIMESTAMP NULL,
-            FOREIGN KEY (requesting_hospital_id) REFERENCES hospitals(id),
-            FOREIGN KEY (granting_hospital_id)   REFERENCES hospitals(id)
-        )
+            revoked_at             TIMESTAMP NULL
+        );
     """)
 
     # Notifications
     c.execute("""
         CREATE TABLE IF NOT EXISTS notifications (
-            id             INT AUTO_INCREMENT PRIMARY KEY,
-            recipient_type ENUM('patient','hospital','admin') NOT NULL,
+            id             SERIAL PRIMARY KEY,
+            recipient_type VARCHAR(20) NOT NULL,
             recipient_id   INT NOT NULL,
             title          VARCHAR(200) NOT NULL,
             message        TEXT NOT NULL,
             type           VARCHAR(50),
             is_read        BOOLEAN DEFAULT FALSE,
             created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     """)
 
     # Password Reset OTPs
     c.execute("""
         CREATE TABLE IF NOT EXISTS password_reset_otps (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
+            id         SERIAL PRIMARY KEY,
             email      VARCHAR(150) NOT NULL,
-            user_type  ENUM('patient','hospital') NOT NULL,
+            user_type  VARCHAR(20) NOT NULL,
             otp_hash   VARCHAR(64) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMP NOT NULL,
             used       BOOLEAN DEFAULT FALSE
-        )
+        );
     """)
 
     # Conversations
     c.execute("""
         CREATE TABLE IF NOT EXISTS conversations (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            patient_id INT NOT NULL,
+            id         SERIAL PRIMARY KEY,
+            patient_id INT NOT NULL REFERENCES patients(id),
             session_id VARCHAR(64) NOT NULL,
-            role       ENUM('user','assistant') NOT NULL,
+            role       VARCHAR(20) NOT NULL,
             message    TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES patients(id)
-        )
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
 
     # Chat Sessions
     c.execute("""
         CREATE TABLE IF NOT EXISTS chat_sessions (
             session_id VARCHAR(64) PRIMARY KEY,
-            patient_id INT NOT NULL,
+            patient_id INT NOT NULL REFERENCES patients(id),
             title      VARCHAR(120) NOT NULL DEFAULT 'Chat Session',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (patient_id) REFERENCES patients(id)
-        )
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
 
     # Audit Logs
     c.execute("""
         CREATE TABLE IF NOT EXISTS audit_logs (
-            id          INT AUTO_INCREMENT PRIMARY KEY,
-            actor_type  ENUM('patient','hospital','admin') NOT NULL,
+            id          SERIAL PRIMARY KEY,
+            actor_type  VARCHAR(20) NOT NULL,
             actor_id    INT NOT NULL,
             action      VARCHAR(100) NOT NULL,
             target_type VARCHAR(50),
@@ -238,13 +229,12 @@ def create_tables():
             details     JSON,
             ip_address  VARCHAR(45),
             created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     """)
 
     c.close()
-    conn.commit()
     conn.close()
-    print("Database tables ready.")
+    print("[NEURAX] PostgreSQL database tables ready.")
 
 # RBAC Decorators
 def hospital_required(f):

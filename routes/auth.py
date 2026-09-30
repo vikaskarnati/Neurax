@@ -38,6 +38,7 @@ def patient_register():
         INSERT INTO patients (patient_uid, first_name, last_name, email, password_hash,
             phone, dob, gender, blood_group, emergency_contact_name, emergency_contact_phone, address)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
     """, (
         uid, data['first_name'], data['last_name'], data['email'],
         generate_password_hash(data['password']), data['phone'], data['dob'],
@@ -45,7 +46,7 @@ def patient_register():
         data.get('emergency_contact_name'), data.get('emergency_contact_phone'),
         data.get('address')
     ))
-    patient_id = c.lastrowid
+    patient_id = c.fetchone()['id']
     conn.close()
 
     token = create_access_token(

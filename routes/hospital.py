@@ -37,14 +37,14 @@ def get_hospital_stats():
     total = c.fetchone()['total']
     c.execute("SELECT COUNT(*) as total FROM appointments WHERE hospital_id = %s AND status='pending'", (hospital_id,))
     pending = c.fetchone()['total']
-    c.execute("SELECT COUNT(*) as total FROM appointments WHERE hospital_id = %s AND appointment_date=CURDATE()", (hospital_id,))
+    c.execute("SELECT COUNT(*) as total FROM appointments WHERE hospital_id = %s AND appointment_date = CURRENT_DATE", (hospital_id,))
     today = c.fetchone()['total']
     c.execute("SELECT COUNT(DISTINCT patient_id) as total FROM appointments WHERE hospital_id = %s", (hospital_id,))
     patients = c.fetchone()['total']
     c.execute("""
         SELECT DATE(appointment_date) as date, COUNT(*) as count
         FROM appointments WHERE hospital_id = %s
-        AND appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        AND appointment_date >= CURRENT_DATE - INTERVAL '7 days'
         GROUP BY DATE(appointment_date) ORDER BY date
     """, (hospital_id,))
     weekly = c.fetchall()

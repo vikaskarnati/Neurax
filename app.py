@@ -20,11 +20,12 @@ jwt = JWTManager(app)
 
 register_blueprints(app)
 
-# Auto-initialize database tables on startup if database is configured
+# Auto-initialize PostgreSQL database tables on startup
 try:
     create_tables()
+    print("[NEURAX] PostgreSQL database connected and schema initialized successfully.")
 except Exception as e:
-    print(f"[STARTUP NOTICE] Database table auto-creation deferred or failed: {e}")
+    print(f"[NEURAX WARNING] PostgreSQL database table initialization notice: {e}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

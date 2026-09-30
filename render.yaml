@@ -1,3 +1,9 @@
+databases:
+  - name: neurax-db
+    databaseName: neurax_db
+    user: neurax
+    plan: free
+
 services:
   - type: web
     name: neurax
@@ -15,7 +21,7 @@ services:
         value: admin@neurax.com
       - key: ADMIN_PASSWORD
         value: admin123
-      - key: GROQ_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
       - key: GOOGLE_PLACES_KEY
         sync: false
@@ -23,17 +29,8 @@ services:
         sync: false
       - key: MAIL_PASSWORD
         sync: false
-      # Cloud MySQL Database configuration
-      # You can provide DATABASE_URL (Option A) OR the individual DB_* variables (Option B)
+      # Automatically connected Render PostgreSQL Database
       - key: DATABASE_URL
-        sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        value: "3306"
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        value: neurax_db
+        fromDatabase:
+          name: neurax-db
+          property: connectionString

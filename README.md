@@ -2,10 +2,10 @@
 
 ![Python Version](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Flask](https://img.shields.io/badge/Framework-Flask-green.svg)
-![MySQL](https://img.shields.io/badge/Database-MySQL-orange.svg)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-purple.svg)
 
-**Neurax** is a comprehensive, AI-powered Healthcare Management System (HMS) designed to bridge the communication and data gap between hospitals, doctors, and patients. Built with Flask and MySQL, Neurax provides secure Role-Based Access Control (RBAC) and modern medical data sharing capabilities.
+**Neurax** is a comprehensive, AI-powered Healthcare Management System (HMS) designed to bridge the communication and data gap between hospitals, doctors, and patients. Built with Flask and PostgreSQL, Neurax provides secure Role-Based Access Control (RBAC) and modern medical data sharing capabilities.
 
 ## ✨ Key Features
 
@@ -13,16 +13,16 @@
 - **🏥 Cross-Hospital Access:** Securely request and grant access to patient medical records across different hospitals.
 - **📅 Appointment Management:** Schedule, confirm, and track doctor appointments seamlessly.
 - **💊 Electronic Medical Records (EMR):** Manage diagnoses, prescriptions, and patient vitals securely.
-- **🤖 AI Health Assistant:** Integrated chat assistant (powered by Google GenAI) for patient queries.
+- **🤖 AI Health Assistant:** Integrated chat assistant (powered by Google Gemini) for patient queries.
 - **🔔 Notifications & Alerts:** Real-time notifications for appointments and record access requests.
 - **🔒 Security & Auditing:** Comprehensive audit logs, OTP-based password resets, and encrypted data storage.
 
 ## 🛠️ Technology Stack
 
 - **Backend Framework:** Python / Flask
-- **Database:** MySQL
+- **Database:** PostgreSQL (`psycopg2-binary`)
 - **Authentication:** Flask-JWT-Extended
-- **AI Integration:** Google GenAI (`google-genai`)
+- **AI Integration:** Google Gemini (`google-generativeai`)
 - **Other Utilities:** Geopy (location services), ReportLab (PDF generation), PyOTP (OTP generation).
 
 ## 📂 Project Structure
@@ -31,7 +31,7 @@
 neurax/
 ├── app.py                 # Application entry point & initialization
 ├── config.py              # Environment configuration & DB settings
-├── database.py            # MySQL schema initialization & RBAC decorators
+├── database.py            # PostgreSQL schema initialization & RBAC decorators
 ├── routes/                # API Endpoints (Auth, Patients, Hospitals)
 ├── services/              # Core business logic
 ├── static/                # CSS, JS, and Images
@@ -44,7 +44,7 @@ neurax/
 
 ### Prerequisites
 - Python 3.8+
-- MySQL Server running locally or remotely.
+- PostgreSQL Server running locally or in the cloud.
 
 ### Installation
 
@@ -69,7 +69,7 @@ neurax/
    ```
 
 4. **Environment Setup:**
-   Create a `.env` file in the root directory based on the configuration required in `config.py` (e.g., MySQL connection string, JWT Secret Key, Google GenAI API Key).
+   Create a `.env` file in the root directory based on `.env.example` (e.g., PostgreSQL connection string, JWT Secret Key, Google Gemini API Key).
 
 5. **Run the Application:**
    The database tables will be automatically initialized on the first run.
@@ -78,25 +78,11 @@ neurax/
    ```
    *The server will start on `http://localhost:5000`.*
 
-## ☁️ Deploy to Render
+## ☁️ Deploy to Render (1-Click Blueprint)
 
-### Option 1: Render Blueprint (1-Click)
 1. Push your repository to GitHub.
 2. Log in to [Render Dashboard](https://dashboard.render.com).
 3. Click **New +** > **Blueprint**.
-4. Select this repository. Render will automatically read `render.yaml` and configure the Web Service.
-5. Provide your MySQL database credentials and `GROQ_API_KEY` under Environment Variables.
-
-### Option 2: Manual Web Service Setup
-1. In Render, click **New +** > **Web Service**.
-2. Connect your GitHub repository.
-3. Set the following options:
-   - **Environment:** `Python`
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 app:app`
-4. Under **Environment Variables**, configure:
-   - `DATABASE_URL` (or `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`)
-   - `JWT_SECRET_KEY` (a random secure string)
-   - `GROQ_API_KEY` (your Groq API key)
-5. Click **Deploy Web Service**.
-
+4. Select this repository. Render will automatically read `render.yaml` and provision both the **PostgreSQL Database** and the **Web Service**.
+5. Set `GEMINI_API_KEY` under Environment Variables.
+6. Click **Apply** — Render automatically connects the database to the web service.

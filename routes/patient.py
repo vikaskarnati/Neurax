@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_jwt_extended import jwt_required, get_jwt_identity, decode_token
-from groq import Groq
+import google.generativeai as genai
 
 from config import Config
 from database import get_db, patient_required
@@ -153,24 +153,20 @@ def classify_symptom():
         return jsonify({'error': 'Reason is required'}), 400
     try:
         valid_list = ', '.join(VALID_SPECIALIZATIONS)
-        client = Groq(api_key=Config.GROQ_API_KEY)
-        resp = client.chat.completions.create(
-            model='llama-3.1-8b-instant',
-            messages=[
-                {'role': 'system', 'content': (
-                    f'You are a medical triage assistant. Given a patient symptom description, '
-                    f'respond with ONLY the single most relevant medical specialization from this list: {valid_list}. '
-                    f'Reply with exactly one item from the list, nothing else.'
-                )},
-                {'role': 'user', 'content': reason[:400]}
-            ],
-            max_tokens=15,
-            temperature=0.1
+        genai.configure(api_key=Config.GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = (
+            f"You are a medical triage assistant. Given a patient symptom description, "
+            f"respond with ONLY the single most relevant medical specialization from this list: {valid_list}. "
+            f"Reply with exactly one item from the list, nothing else.\n\n"
+            f"Patient description: {reason[:400]}"
         )
-        raw = resp.choices[0].message.content.strip()
+        resp = model.generate_content(prompt)
+        raw = (resp.text or '').strip()
         matched = next((s for s in VALID_SPECIALIZATIONS if s.lower() == raw.lower()), None)
         specialization = matched or 'General Medicine'
-    except Exception:
+    except Exception as e:
+        print(f"[CLASSIFY ERROR] {e}")
         specialization = 'General Medicine'
     return jsonify({'specialization': specialization})
 
@@ -382,19 +378,21 @@ def ai_chat():
     def generate():
         full_reply = []
         try:
-            client = Groq(api_key=Config.GROQ_API_KEY)
-            stream = client.chat.completions.create(
-                model='llama-3.3-70b-versatile',
-                messages=[
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user',   'content': full_prompt}
-                ],
-                max_tokens=1024,
-                temperature=0.7,
-                stream=True
-            )
-            for chunk in stream:
-                token = chunk.choices[0].delta.content
+            genai.configure(api_key=Config.GEMINI_API_KEY)
+            
+            prompt_parts = [f"System Instructions:\n{system_prompt}\n"]
+            if history:
+                prompt_parts.append("Conversation History:")
+                for h in history[-6:]:
+                    prompt_parts.append(f"{h['role'].title()}: {h['message']}")
+            prompt_parts.append(f"\nUser: {message}")
+            prompt_content = "\n".join(prompt_parts)
+
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(prompt_content, stream=True)
+
+            for chunk in response:
+                token = chunk.text or ''
                 if token:
                     full_reply.append(token)
                     yield f"data: {json.dumps({'token': token, 'session_id': session_id})}\n\n"
@@ -410,15 +408,10 @@ def ai_chat():
             is_new = save_c.fetchone()[0] == 0
             if is_new:
                 try:
-                    title_resp = client.chat.completions.create(
-                        model='llama-3.1-8b-instant',
-                        messages=[
-                            {'role': 'system', 'content': 'Create a short 4-6 word title for this chat based on the user message. Return only the title, no quotes, no punctuation at the end.'},
-                            {'role': 'user', 'content': message[:300]}
-                        ],
-                        max_tokens=20, temperature=0.3
+                    title_resp = model.generate_content(
+                        f"Create a short 4-6 word title for this chat based on the user message: '{message[:300]}'. Return only the plain title, no quotes."
                     )
-                    title = title_resp.choices[0].message.content.strip()[:100]
+                    title = (title_resp.text or '').strip()[:100]
                 except Exception:
                     title = message[:60].strip()
                 save_c.execute("INSERT INTO chat_sessions (session_id, patient_id, title) VALUES (%s,%s,%s)",
