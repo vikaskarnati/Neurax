@@ -28,18 +28,20 @@ def hash_otp(otp):
     return hashlib.sha256(otp.encode()).hexdigest()
 
 def send_email(to_email, subject, html_body):
+    if not Config.MAIL_EMAIL or not Config.MAIL_PASSWORD or not to_email:
+        return False
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From']    = Config.MAIL_EMAIL
         msg['To']      = to_email
         msg.attach(MIMEText(html_body, 'html'))
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=4) as server:
             server.login(Config.MAIL_EMAIL, Config.MAIL_PASSWORD)
             server.sendmail(Config.MAIL_EMAIL, to_email, msg.as_string())
         return True
     except Exception as e:
-        print(f"Email error: {e}")
+        print(f"Email delivery skipped or failed: {e}")
         return False
 
 def add_notification(recipient_type, recipient_id, title, message, notif_type=None):

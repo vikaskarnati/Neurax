@@ -408,18 +408,26 @@
   async function handlePatientLogin(e) {
     e.preventDefault();
     setLoading('plBtn', true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     try {
       const res  = await fetch('/api/auth/patient/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: document.getElementById('plEmail').value, password: document.getElementById('plPassword').value })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: document.getElementById('plEmail').value, password: document.getElementById('plPassword').value }),
+        signal: controller.signal
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      clearTimeout(timeoutId);
+      let data = {};
+      try { data = await res.json(); } catch(e) { data = { error: `Server error (${res.status})` }; }
+      if (!res.ok) throw new Error(data.error || 'Invalid credentials');
       storeAuth(data.token, data, 'patient');
       showToast(`Welcome back, ${data.first_name}!`, 'success');
       setTimeout(() => window.location.href = '/patient', 800);
     } catch(err) {
-      showToast(err.message || 'Login failed', 'error');
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? 'Server timed out. Please check database connection.' : (err.message || 'Login failed');
+      showToast(msg, 'error');
       setLoading('plBtn', false, 'Sign In');
     }
   }
@@ -428,6 +436,8 @@
   async function handlePatientRegister(e) {
     e.preventDefault();
     setLoading('prBtn', true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     const body = {
       first_name: document.getElementById('prFirstName').value,
       last_name:  document.getElementById('prLastName').value,
@@ -442,15 +452,22 @@
     };
     try {
       const res  = await fetch('/api/auth/patient/register', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      clearTimeout(timeoutId);
+      let data = {};
+      try { data = await res.json(); } catch(e) { data = { error: `Server error (${res.status})` }; }
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
       storeAuth(data.token, data, 'patient');
       showToast(`Account created! Your ID: ${data.patient_uid}`, 'success');
       setTimeout(() => window.location.href = '/patient', 1000);
     } catch(err) {
-      showToast(err.message || 'Registration failed', 'error');
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? 'Server timed out. Please check database connection.' : (err.message || 'Registration failed');
+      showToast(msg, 'error');
       setLoading('prBtn', false, 'Create Account');
     }
   }
@@ -459,18 +476,26 @@
   async function handleHospitalLogin(e) {
     e.preventDefault();
     setLoading('hlBtn', true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     try {
       const res  = await fetch('/api/auth/hospital/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: document.getElementById('hlEmail').value, password: document.getElementById('hlPassword').value })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: document.getElementById('hlEmail').value, password: document.getElementById('hlPassword').value }),
+        signal: controller.signal
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      clearTimeout(timeoutId);
+      let data = {};
+      try { data = await res.json(); } catch(e) { data = { error: `Server error (${res.status})` }; }
+      if (!res.ok) throw new Error(data.error || 'Invalid credentials');
       storeAuth(data.token, data, 'hospital');
       showToast('Login successful', 'success');
       setTimeout(() => window.location.href = '/hospital', 800);
     } catch(err) {
-      showToast(err.message || 'Login failed', 'error');
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? 'Server timed out. Please check database connection.' : (err.message || 'Login failed');
+      showToast(msg, 'error');
       setLoading('hlBtn', false, 'Sign In');
     }
   }
@@ -479,6 +504,8 @@
   async function handleHospitalRegister(e) {
     e.preventDefault();
     setLoading('hrBtn', true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     const body = {
       hospital_name:       document.getElementById('hrHospitalName').value,
       hospital_type:       document.getElementById('hrHospitalType').value,
@@ -492,10 +519,15 @@
     };
     try {
       const res  = await fetch('/api/auth/hospital/register', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      clearTimeout(timeoutId);
+      let data = {};
+      try { data = await res.json(); } catch(e) { data = { error: `Server error (${res.status})` }; }
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
       document.getElementById('authCard').innerHTML = `
         <div style="text-align:center;padding:20px 0">
           <div style="font-size:52px;margin-bottom:16px">🏥</div>
@@ -512,7 +544,9 @@
         </div>
       `;
     } catch(err) {
-      showToast(err.message || 'Registration failed', 'error');
+      clearTimeout(timeoutId);
+      const msg = err.name === 'AbortError' ? 'Server timed out. Please check database connection.' : (err.message || 'Registration failed');
+      showToast(msg, 'error');
       setLoading('hrBtn', false, 'Submit Registration');
     }
   }
