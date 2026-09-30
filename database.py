@@ -9,11 +9,32 @@ from flask import jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 
 def get_db():
-    return mysql.connector.connect(**Config.DB_CONFIG)
+    return mysql.connector.connect(**Config.get_db_config())
 
 def create_tables():
-    conn = get_db()
+    db_config = Config.get_db_config()
+    db_name = db_config.get('database', 'neurax_db')
+    try:
+        conn = get_db()
+    except mysql.connector.Error as err:
+        if getattr(err, 'errno', None) == 1049:
+            # Database does not exist yet; connect without specifying db and create it
+            try:
+                temp_cfg = {k: v for k, v in db_config.items() if k != 'database'}
+                admin_conn = mysql.connector.connect(**temp_cfg)
+                admin_c = admin_conn.cursor()
+                admin_c.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` DEFAULT CHARACTER SET utf8mb4")
+                admin_conn.commit()
+                admin_conn.close()
+                conn = get_db()
+            except Exception as create_err:
+                print(f"[DB ERROR] Could not automatically create database '{db_name}': {create_err}")
+                raise err
+        else:
+            raise err
+
     c = conn.cursor(dictionary=True)
+
 
     # Hospitals
     c.execute("""
@@ -220,6 +241,8 @@ def create_tables():
         )
     """)
 
+    c.close()
+    conn.commit()
     conn.close()
     print("Database tables ready.")
 

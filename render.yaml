@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: neurax
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 app:app
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@neurax.com
+      - key: ADMIN_PASSWORD
+        value: admin123
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_PLACES_KEY
+        sync: false
+      - key: MAIL_EMAIL
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      # Cloud MySQL Database configuration
+      # You can provide DATABASE_URL (Option A) OR the individual DB_* variables (Option B)
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: neurax_db

@@ -77,3 +77,26 @@ neurax/
    python app.py
    ```
    *The server will start on `http://localhost:5000`.*
+
+## ☁️ Deploy to Render
+
+### Option 1: Render Blueprint (1-Click)
+1. Push your repository to GitHub.
+2. Log in to [Render Dashboard](https://dashboard.render.com).
+3. Click **New +** > **Blueprint**.
+4. Select this repository. Render will automatically read `render.yaml` and configure the Web Service.
+5. Provide your MySQL database credentials and `GROQ_API_KEY` under Environment Variables.
+
+### Option 2: Manual Web Service Setup
+1. In Render, click **New +** > **Web Service**.
+2. Connect your GitHub repository.
+3. Set the following options:
+   - **Environment:** `Python`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 app:app`
+4. Under **Environment Variables**, configure:
+   - `DATABASE_URL` (or `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`)
+   - `JWT_SECRET_KEY` (a random secure string)
+   - `GROQ_API_KEY` (your Groq API key)
+5. Click **Deploy Web Service**.
+
